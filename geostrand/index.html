@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoStrand: Enlemden Kaçış</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- ================= OYUN TUVALİ (Phaser, tüm pencereyi kaplar) ================= -->
+  <div id="game-container"></div>
+
+  <!-- Ekran kenarı uyarıları (susuzluk, soğuk, yaralanma) -->
+  <div id="vignette" aria-hidden="true"></div>
+  <!-- Hava olayı pusu (kum fırtınası, sis, tipi) -->
+  <div id="weather-haze" aria-hidden="true"></div>
+  <!-- Yeni kademe açıldı afişi -->
+  <div id="unlock" class="hidden" role="status"></div>
+  <!-- Ekran dışındaki ipucu nesnelerini gösteren oklar -->
+  <div id="indicators" aria-hidden="true"></div>
+
+  <!-- ================= HUD ================= -->
+  <div id="hud" class="hidden">
+    <!-- Sol üst: hayatta kalma göstergeleri -->
+    <section class="panel vitals" aria-label="Hayatta kalma">
+      <div class="hero-head">
+        <canvas id="hud-portrait" width="40" height="40" aria-hidden="true"></canvas>
+        <div>
+          <div class="hero-name" id="hud-hero-name">Kâşif</div>
+          <div class="region"><span id="hud-location">Bölge 1</span> · <span id="hud-tier">Çaylak kâşif</span></div>
+        </div>
+      </div>
+      <div class="meter" id="row-hp" title="Can: su ya da ısı biterse azalır">
+        <span class="meter-icon" aria-hidden="true">❤️</span>
+        <span class="meter-name">Can</span>
+        <div class="meter-track"><div class="meter-fill hp" id="bar-hp"></div></div>
+        <span class="meter-value" id="val-hp">100</span>
+      </div>
+      <div class="meter" id="row-water" title="Su: sıcak ve kurak yerlerde hızlı biter">
+        <span class="meter-icon" aria-hidden="true">💧</span>
+        <span class="meter-name">Su</span>
+        <div class="meter-track"><div class="meter-fill water" id="bar-water"></div></div>
+        <span class="meter-value" id="val-water">100</span>
+      </div>
+      <div class="meter" id="row-temp" title="Vücut ısısı: soğukta ve gece hızlı düşer">
+        <span class="meter-icon" aria-hidden="true">🌡️</span>
+        <span class="meter-name">Isı</span>
+        <div class="meter-track"><div class="meter-fill temp" id="bar-temp"></div></div>
+        <span class="meter-value" id="val-temp">37,0°</span>
+      </div>
+      <div class="penalty hidden" id="hud-penalty">
+        <span>⚠️ Ceza: 2 kat hızlı kayıp</span><b id="hud-penalty-time">45</b>
+      </div>
+    </section>
+
+    <!-- Üst orta: şimdi ne yapmalıyım? -->
+    <section class="panel objective" id="objective" aria-live="polite">
+      <div class="obj-title" id="obj-title">Bölgeyi keşfet</div>
+      <ul class="obj-items" id="obj-items"></ul>
+      <div class="obj-hint" id="obj-hint">Sarı <b>?</b> işaretlerine yürü, <kbd>E</kbd> ile incele</div>
+    </section>
+
+    <!-- Sağ üst: saat ve pusula -->
+    <section class="panel clock">
+      <div class="clock-text">
+        <div class="clock-time" id="hud-clock">09:00</div>
+        <div class="clock-phase" id="hud-phase">☀️ Gündüz · Gün 1</div>
+      </div>
+      <svg class="compass" viewBox="0 0 44 44" role="img" aria-label="Pusula: yukarısı kuzey">
+        <circle cx="22" cy="22" r="20" class="c-ring"/>
+        <path d="M22 6 L27 22 L22 19 L17 22 Z" class="c-north"/>
+        <path d="M22 38 L27 22 L22 25 L17 22 Z" class="c-south"/>
+        <text x="22" y="5.5" class="c-k">K</text>
+      </svg>
+    </section>
+    <div class="panel weather-chip hidden" id="hud-weather"></div>
+
+    <!-- Sol alt: çanta -->
+    <section class="hotbar" aria-label="Çanta">
+      <button type="button" class="slot-btn" id="use-water" title="Su Matarası: +50 su">
+        <kbd>1</kbd><span class="slot-emoji">💧</span><span class="slot-count" id="inv-water">1</span>
+      </button>
+      <button type="button" class="slot-btn" id="use-heat" title="Isı Paketi: +50 ısı">
+        <kbd>2</kbd><span class="slot-emoji">🔥</span><span class="slot-count" id="inv-heat">1</span>
+      </button>
+      <div class="rescued" title="Kurtulduğun bölge sayısı">
+        <span>🛩️</span><b id="hud-escaped">0</b><small>kurtuluş</small>
+      </div>
+      <div class="rescued score" title="Toplam puan">
+        <span>⭐</span><b id="hud-score">0</b><small>puan</small>
+      </div>
+    </section>
+
+    <!-- Sağ alt: eylem çubuğu -->
+    <nav class="actions" aria-label="Oyun eylemleri">
+      <button type="button" class="act primary" id="act-pad"><span>🧭</span>Pad<kbd>P</kbd></button>
+      <button type="button" class="act" id="act-mute" aria-label="Sesi aç/kapat"><span id="mute-icon">🔊</span><kbd>M</kbd></button>
+      <button type="button" class="act" id="act-full" aria-label="Tam ekran"><span id="full-icon">⛶</span><kbd>F</kbd></button>
+      <button type="button" class="act" id="act-menu" aria-label="Menü"><span>☰</span><kbd>Esc</kbd></button>
+    </nav>
+  </div>
+
+  <div id="toasts" aria-live="polite"></div>
+
+  <!-- ================= COĞRAFYACI PAD'İ (saha defteri) ================= -->
+  <div id="pad" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pad-title">
+    <div class="pad">
+      <header class="pad-header">
+        <span class="pad-logo" aria-hidden="true">🧭</span>
+        <h2 id="pad-title">Coğrafyacı Pad'i</h2>
+        <span class="pad-location" id="pad-location">Bölge 1</span>
+        <button type="button" class="pad-guide" id="pad-guide">📖 Rehber</button>
+        <button type="button" class="pad-close" id="pad-close" aria-label="Pad'i kapat (Esc)">✕</button>
+      </header>
+
+      <div class="pad-body">
+        <section class="pad-col">
+          <h3>Gözlemler <span class="count" id="pad-count">0/3</span></h3>
+          <!-- Kartlar GeographerPad.js tarafından kademeye göre üretilir (3–5 adet) -->
+          <div class="slots" id="pad-slots"></div>
+
+          <details class="pad-hint">
+            <summary>📐 Gölgeden enlem bul</summary>
+            <p class="hint-rules">Gölge <b>kutba</b> doğru düşer. Gölge uzadıkça enlem büyür.</p>
+            <div class="ruler" role="table" aria-label="Gölge uzunluğu ve enlem">
+              <div class="ruler-row" role="row"><span role="rowheader">Gölge (m)</span><span>0</span><span>0,18</span><span>0,36</span><span>0,58</span><span>0,84</span><span>1,19</span><span>1,73</span><span>2,75</span></div>
+              <div class="ruler-row lat" role="row"><span role="rowheader">Enlem</span><span>0°</span><span>10°</span><span>20°</span><span>30°</span><span>40°</span><span>50°</span><span>60°</span><span>70°</span></div>
+            </div>
+          </details>
+        </section>
+
+        <section class="pad-col">
+          <h3>Konum tahmini</h3>
+          <form id="pad-form" novalidate>
+            <fieldset>
+              <legend><span class="step">1</span> Yarım küre</legend>
+              <div class="seg">
+                <label><input type="radio" name="hemisphere" value="KUZEY"><span>⬆️ Kuzey</span></label>
+                <label><input type="radio" name="hemisphere" value="GUNEY"><span>⬇️ Güney</span></label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend><span class="step">2</span> İklim</legend>
+              <div class="climate-grid" id="pad-climates"></div>
+            </fieldset>
+
+            <fieldset>
+              <legend><span class="step">3</span> Enlem <output id="pad-lat-out" for="pad-lat">45°</output></legend>
+              <div class="lat-row">
+                <span class="lat-end">0° Ekvator</span>
+                <input type="range" id="pad-lat" name="latitude" min="0" max="90" step="1" value="45" aria-label="Enlem">
+                <span class="lat-end">Kutup 90°</span>
+              </div>
+            </fieldset>
+
+            <fieldset data-field="landform" class="hidden">
+              <legend><span class="step">4</span> Yer şekli</legend>
+              <div class="climate-grid three" id="pad-landforms"></div>
+            </fieldset>
+
+            <fieldset data-field="continent" class="hidden">
+              <legend><span class="step">5</span> Kıta</legend>
+              <div class="climate-grid" id="pad-continents"></div>
+            </fieldset>
+
+            <button type="submit" class="btn-signal" id="pad-submit">📡 Koordinatı gönder</button>
+          </form>
+          <div class="pad-result hidden" id="pad-result" aria-live="polite"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DURAKLATMA MENÜSÜ ================= -->
+  <div id="menu" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="menu-title">
+    <div class="menu">
+      <h2 id="menu-title">Oyun duraklatıldı</h2>
+      <button type="button" class="btn-signal" id="menu-resume">Devam et</button>
+
+      <section class="menu-section" aria-labelledby="menu-sound">
+        <h3 id="menu-sound">Ses</h3>
+        <label class="slider"><span>🎵 Müzik</span><input type="range" min="0" max="100" data-channel="music"><output></output></label>
+        <label class="slider"><span>🌿 Doğa sesleri</span><input type="range" min="0" max="100" data-channel="ambience"><output></output></label>
+        <label class="slider"><span>🔔 Efektler</span><input type="range" min="0" max="100" data-channel="sfx"><output></output></label>
+        <label class="slider"><span>🔊 Ana ses</span><input type="range" min="0" max="100" data-channel="master"><output></output></label>
+      </section>
+
+      <div class="menu-row">
+        <button type="button" class="btn-ghost" id="menu-guide">📖 Rehber</button>
+        <button type="button" class="btn-ghost" id="menu-hero">🧭 Kâşifi düzenle</button>
+      </div>
+
+      <div class="menu-row">
+        <button type="button" class="btn-ghost" id="menu-full">⛶ Tam ekran</button>
+        <button type="button" class="btn-ghost danger" id="menu-restart">↺ Baştan başla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= KARAKTER OLUŞTURUCU ================= -->
+  <div id="creator" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="creator-title">
+    <div class="creator">
+      <div class="creator-stage">
+        <canvas id="creator-preview" width="216" height="264" aria-label="Kâşif önizlemesi"></canvas>
+        <div class="stage-controls">
+          <button type="button" class="round" id="creator-rot-left" aria-label="Sola çevir">↺</button>
+          <button type="button" class="round" id="creator-rot-right" aria-label="Sağa çevir">↻</button>
+        </div>
+      </div>
+      <div class="creator-form">
+        <h2 id="creator-title">Kâşifini hazırla</h2>
+        <label class="name-field"><span>Adı</span><input type="text" id="creator-name" maxlength="14" autocomplete="off" spellcheck="false"></label>
+        <div id="creator-options"></div>
+        <div class="creator-actions">
+          <button type="button" class="btn-ghost" id="creator-random">🎲 Rastgele</button>
+          <button type="button" class="btn-ghost" id="creator-cancel">Vazgeç</button>
+          <button type="button" class="btn-signal" id="creator-save">Göreve çık</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= REHBER ================= -->
+  <div id="guide" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+    <div class="guide">
+      <header class="guide-header">
+        <h2 id="guide-title">📖 Rehber</h2>
+        <button type="button" class="pad-close" id="guide-close" aria-label="Rehberi kapat (Esc)">✕</button>
+      </header>
+      <nav class="guide-tabs" id="guide-tabs" role="tablist"></nav>
+      <div class="guide-body" id="guide-body"></div>
+    </div>
+  </div>
+
+  <!-- ================= BÖLGELER ARASI UÇUŞ ================= -->
+  <div id="travel" class="hidden" aria-live="polite">
+    <div class="travel-route"><span class="travel-plane">🛩️</span></div>
+    <p>Kurtarma uçağı seni yeni bir bölgeye bırakıyor</p>
+  </div>
+
+  <!-- ================= BAŞLANGIÇ EKRANI ================= -->
+  <div id="intro" class="screen intro">
+    <div class="intro-text">
+      <h1 class="wordmark">GeoStrand</h1>
+      <p class="subtitle">Enlemden Kaçış</p>
+      <p class="lead">Uçağın bilinmeyen bir yere düştü. Çevreni incele, nerede olduğunu bul ve kurtarma ekibine doğru koordinatı gönder.</p>
+      <ol class="steps">
+        <li><b>İncele</b><span>Ağacı, toprağı ve güneş çubuğunun gölgesini <kbd>E</kbd> ile incele.</span></li>
+        <li><b>Tahmin et</b><span>Pad'de yarım küreyi, iklimi ve enlemi seç.</span></li>
+        <li><b>Kurtul</b><span>Doğruysa çantana su ve ısı eklenir. Yanlışsa barların hızla düşer.</span></li>
+        <li><b>Ustalaş</b><span>Bölge 3'te yer şekli, Bölge 5'te kıta soruları açılır.</span></li>
+      </ol>
+      <div class="intro-actions">
+        <button type="button" class="btn-signal" id="btn-start">Göreve başla</button>
+        <button type="button" class="btn-ghost" id="btn-hero">🧭 Kâşifi düzenle</button>
+        <button type="button" class="btn-ghost" id="btn-guide">📖 Rehber</button>
+        <button type="button" class="btn-ghost icon" id="btn-full" aria-label="Tam ekran">⛶</button>
+      </div>
+      <p class="fine" id="intro-best">Enter ile de başlayabilirsin. Oyun müzikli; <kbd>M</kbd> ile sesi kapatabilirsin.</p>
+    </div>
+
+    <!-- Dünya: enlem çizgileri ve bilinmeyen konumdan gelen sinyal -->
+    <svg class="globe" viewBox="0 0 400 400" aria-hidden="true">
+      <defs>
+        <clipPath id="globe-clip"><circle cx="200" cy="200" r="170"/></clipPath>
+      </defs>
+      <circle cx="200" cy="200" r="170" class="g-sea"/>
+      <g clip-path="url(#globe-clip)">
+        <g class="g-meridians">
+          <ellipse cx="200" cy="200" rx="40" ry="170"/>
+          <ellipse cx="200" cy="200" rx="95" ry="170"/>
+          <ellipse cx="200" cy="200" rx="140" ry="170"/>
+          <line x1="200" y1="30" x2="200" y2="370"/>
+        </g>
+        <g class="g-lats">
+          <line x1="20" y1="115" x2="380" y2="115"/>
+          <line x1="20" y1="157" x2="380" y2="157"/>
+          <line x1="20" y1="243" x2="380" y2="243"/>
+          <line x1="20" y1="285" x2="380" y2="285"/>
+        </g>
+        <line x1="20" y1="200" x2="380" y2="200" class="g-equator"/>
+        <path d="M70 150 q30 -40 70 -10 t60 20 q20 30 -10 50 t-60 10 q-40 -10 -60 -70z M230 230 q40 -20 70 10 t20 50 q-20 30 -60 20 t-30 -80z M250 90 q30 -10 60 10 t10 30 q-30 10 -60 0z" class="g-land"/>
+      </g>
+      <!-- Enlem etiketleri çemberin dışında (kesilmesin) -->
+      <g class="g-lat-labels">
+        <text x="356" y="119">60° K</text><text x="372" y="161">30° K</text>
+        <text x="372" y="247">30° G</text><text x="356" y="289">60° G</text>
+      </g>
+      <text x="22" y="204" class="g-label">Ekvator 0°</text>
+      <circle cx="200" cy="200" r="170" class="g-rim"/>
+      <g class="g-signal" transform="translate(262 128)">
+        <circle r="10" class="pulse"/>
+        <circle r="10" class="pulse delay"/>
+        <circle r="7" class="dot"/>
+        <text y="4" class="q">?</text>
+      </g>
+    </svg>
+    <p class="course">BTE 422 Eğitsel Oyun ve Oyunlaştırma dersi projesi</p>
+  </div>
+
+  <!-- ================= OYUN SONU ================= -->
+  <div id="gameover" class="screen gameover hidden">
+    <div class="gameover-card">
+      <h1>Hayatta kalamadın</h1>
+      <p id="gameover-stats"></p>
+      <p class="fine">Su ve ısı barlarını izle, çantandaki eşyaları zamanında kullan.</p>
+      <button type="button" class="btn-signal" id="btn-restart">Yeniden dene <kbd>R</kbd></button>
+    </div>
+  </div>
+
+  <!-- ================= SCRIPTLER (sıra önemli) ================= -->
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+
+  <!-- 1) Çekirdek ve veri -->
+  <script src="js/core/EventBus.js"></script>
+  <script src="js/core/Config.js"></script>
+  <script src="js/data/climates.js"></script>
+  <script src="js/data/locations.js"></script>
+  <script src="js/data/musicThemes.js"></script>
+  <script src="js/data/landforms.js"></script>
+  <script src="js/data/weather.js"></script>
+
+  <!-- 2) Mantık katmanı (Phaser'dan bağımsız, test edilebilir) -->
+  <script src="js/logic/SurvivalSystem.js"></script>
+  <script src="js/logic/DayNightCycle.js"></script>
+  <script src="js/logic/PredictionEvaluator.js"></script>
+  <script src="js/logic/ClueFactory.js"></script>
+  <script src="js/logic/Inventory.js"></script>
+  <script src="js/logic/LocationManager.js"></script>
+  <script src="js/logic/Progression.js"></script>
+
+  <!-- 2b) Karakter çizici (Canvas; oyun ve oluşturucu ortak kullanır) -->
+  <script src="js/render/CharacterRenderer.js"></script>
+
+  <!-- 3) Oyun katmanı (Phaser) -->
+  <script src="js/game/entities/Player.js"></script>
+  <script src="js/game/entities/Interactable.js"></script>
+  <script src="js/game/systems/InteractionSystem.js"></script>
+  <script src="js/game/systems/TerrainPainter.js"></script>
+  <script src="js/game/systems/WorldBuilder.js"></script>
+  <script src="js/game/systems/LightingOverlay.js"></script>
+  <script src="js/game/systems/WeatherFX.js"></script>
+  <script src="js/game/scenes/BootScene.js"></script>
+  <script src="js/game/scenes/GameScene.js"></script>
+
+  <!-- 4) Ses (Web Audio, dosyasız) -->
+  <script src="js/audio/AudioEngine.js"></script>
+  <script src="js/audio/MusicGenerator.js"></script>
+  <script src="js/audio/AmbientLayer.js"></script>
+
+  <!-- 5) Arayüz (HTML/DOM) -->
+  <script src="js/ui/HUD.js"></script>
+  <script src="js/ui/GeographerPad.js"></script>
+  <script src="js/ui/PauseMenu.js"></script>
+  <script src="js/ui/OffscreenIndicators.js"></script>
+  <script src="js/ui/CharacterCreator.js"></script>
+  <script src="js/ui/Guide.js"></script>
+
+  <!-- 6) Başlat -->
+  <script src="js/main.js"></script>
+</body>
+</html>
