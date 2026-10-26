@@ -2,7 +2,13 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Telefon/tablet: sayfa yakınlaştırılmasın, çentikli ekranın tamamı kullanılsın -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f2a2e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="GeoStrand">
   <title>GeoStrand: Enlemden Kaçış</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,8 +19,10 @@
   <!-- ================= OYUN TUVALİ (Phaser, tüm pencereyi kaplar) ================= -->
   <div id="game-container"></div>
 
-  <!-- Ekran kenarı uyarıları (susuzluk, soğuk, yaralanma) -->
-  <div id="vignette" aria-hidden="true"></div>
+  <!-- Hayati durum efektleri: can düşünce kararma + nabız, susuzlukta sıcak kenarlar, soğukta kırağı -->
+  <div id="vignette" aria-hidden="true"><i class="fx-frost"></i></div>
+  <!-- Dokunmatik joystick (parmağın değdiği yerde belirir) -->
+  <div id="joystick" aria-hidden="true"><span class="knob"></span></div>
   <!-- Hava olayı pusu (kum fırtınası, sis, tipi) -->
   <div id="weather-haze" aria-hidden="true"></div>
   <!-- Yeni kademe açıldı afişi -->
@@ -78,6 +86,14 @@
     </section>
     <div class="panel weather-chip hidden" id="hud-weather"></div>
 
+    <!-- Ortada: ne kötü gidiyor + ne yapmalı (dokununca önerilen eşyayı kullanır) -->
+    <button type="button" class="vital-alert hidden" id="vital-alert"></button>
+
+    <!-- Telefon/tablet: yakında incelenecek nesne varken büyük İncele düğmesi -->
+    <button type="button" class="act-interact" id="act-interact" aria-label="İncele">
+      <span class="ai-icon" aria-hidden="true">👆</span><span class="ai-label" id="act-interact-label">İncele</span>
+    </button>
+
     <!-- Sol alt: çanta -->
     <section class="hotbar" aria-label="Çanta">
       <button type="button" class="slot-btn" id="use-water" title="Su Matarası: +50 su">
@@ -135,7 +151,7 @@
         <section class="pad-col">
           <h3>Konum tahmini</h3>
           <form id="pad-form" novalidate>
-            <fieldset>
+            <fieldset data-field="hemisphere">
               <legend><span class="step">1</span> Yarım küre</legend>
               <div class="seg">
                 <label><input type="radio" name="hemisphere" value="KUZEY"><span>⬆️ Kuzey</span></label>
@@ -143,12 +159,12 @@
               </div>
             </fieldset>
 
-            <fieldset>
+            <fieldset data-field="climate">
               <legend><span class="step">2</span> İklim</legend>
               <div class="climate-grid" id="pad-climates"></div>
             </fieldset>
 
-            <fieldset>
+            <fieldset data-field="latitude">
               <legend><span class="step">3</span> Enlem <output id="pad-lat-out" for="pad-lat">45°</output></legend>
               <div class="lat-row">
                 <span class="lat-end">0° Ekvator</span>
@@ -166,12 +182,15 @@
               <legend><span class="step">5</span> Kıta</legend>
               <div class="climate-grid" id="pad-continents"></div>
             </fieldset>
-
-            <button type="submit" class="btn-signal" id="pad-submit">📡 Koordinatı gönder</button>
           </form>
-          <div class="pad-result hidden" id="pad-result" aria-live="polite"></div>
         </section>
       </div>
+
+      <!-- Alt şerit: sonuç ve gönder düğmesi HER ZAMAN görünür (kaydırmaya gerek yok) -->
+      <footer class="pad-footer">
+        <div class="pad-result hidden" id="pad-result" aria-live="polite"></div>
+        <button type="submit" form="pad-form" class="btn-signal" id="pad-submit">📡 Koordinatı gönder</button>
+      </footer>
     </div>
   </div>
 
@@ -249,7 +268,7 @@
       <p class="subtitle">Enlemden Kaçış</p>
       <p class="lead">Uçağın bilinmeyen bir yere düştü. Çevreni incele, nerede olduğunu bul ve kurtarma ekibine doğru koordinatı gönder.</p>
       <ol class="steps">
-        <li><b>İncele</b><span>Ağacı, toprağı ve güneş çubuğunun gölgesini <kbd>E</kbd> ile incele.</span></li>
+        <li><b>İncele</b><span>Ağacı, toprağı ve güneş çubuğunun gölgesini incele: <span class="kb-only"><kbd>WASD</kbd> ile yürü, <kbd>E</kbd> ile incele.</span><span class="touch-only">kaydırarak yürü ya da nesneye dokun.</span></span></li>
         <li><b>Tahmin et</b><span>Pad'de yarım küreyi, iklimi ve enlemi seç.</span></li>
         <li><b>Kurtul</b><span>Doğruysa çantana su ve ısı eklenir. Yanlışsa barların hızla düşer.</span></li>
         <li><b>Ustalaş</b><span>Bölge 3'te yer şekli, Bölge 5'te kıta soruları açılır.</span></li>
@@ -260,7 +279,7 @@
         <button type="button" class="btn-ghost" id="btn-guide">📖 Rehber</button>
         <button type="button" class="btn-ghost icon" id="btn-full" aria-label="Tam ekran">⛶</button>
       </div>
-      <p class="fine" id="intro-best">Enter ile de başlayabilirsin. Oyun müzikli; <kbd>M</kbd> ile sesi kapatabilirsin.</p>
+      <p class="fine" id="intro-best"><span class="kb-only">Enter ile de başlayabilirsin. Oyun müzikli; <kbd>M</kbd> ile sesi kapatabilirsin.</span><span class="touch-only">Telefonu yatay ya da dikey tutabilirsin. Oyun müzikli; 🔊 ile sesi kapatabilirsin.</span></p>
     </div>
 
     <!-- Dünya: enlem çizgileri ve bilinmeyen konumdan gelen sinyal -->
@@ -308,7 +327,7 @@
       <h1>Hayatta kalamadın</h1>
       <p id="gameover-stats"></p>
       <p class="fine">Su ve ısı barlarını izle, çantandaki eşyaları zamanında kullan.</p>
-      <button type="button" class="btn-signal" id="btn-restart">Yeniden dene <kbd>R</kbd></button>
+      <button type="button" class="btn-signal" id="btn-restart">Yeniden dene <kbd class="kb-only">R</kbd></button>
     </div>
   </div>
 
@@ -316,6 +335,7 @@
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
 
   <!-- 1) Çekirdek ve veri -->
+  <script src="js/core/Device.js"></script>
   <script src="js/core/EventBus.js"></script>
   <script src="js/core/Config.js"></script>
   <script src="js/data/climates.js"></script>
@@ -340,6 +360,7 @@
   <script src="js/game/entities/Player.js"></script>
   <script src="js/game/entities/Interactable.js"></script>
   <script src="js/game/systems/InteractionSystem.js"></script>
+  <script src="js/game/systems/TouchControls.js"></script>
   <script src="js/game/systems/TerrainPainter.js"></script>
   <script src="js/game/systems/WorldBuilder.js"></script>
   <script src="js/game/systems/LightingOverlay.js"></script>

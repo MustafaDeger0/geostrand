@@ -30,7 +30,7 @@
     CAMERA: {
       viewWidth: 1100,
       viewHeight: 680,
-      minZoom: 0.8,
+      minZoom: 0.6,                // telefonda biraz daha uzaktan bak
       maxZoom: 1.7,
     },
 

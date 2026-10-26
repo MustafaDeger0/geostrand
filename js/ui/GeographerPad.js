@@ -11,7 +11,12 @@
  *    • Gölge kartında pusula şeması (gölgenin yönü ve uzunluğu)
  *    • Açılır "gölgeden enlem" cetveli
  *  SAĞ — Tahmin: ① Yarım küre ② İklim ③ Enlem (+ ④ Yer şekli, ⑤ Kıta)
- *  SONUÇ: Her alan için ✔/✘ rozeti + tek ipucu; doğruysa ⭐ yıldız ve puan.
+ *  SONUÇ — iki yerde birden, kaydırmadan görülür:
+ *    • Alt şerit (hep görünür): "✘ 2/3 doğru · kırmızı alanları düzelt" ya da
+ *      doğruysa ⭐ yıldız, gerçek konum ve "Sonraki bölgeye uç"
+ *    • Her sorunun kendisinde: yeşil ✔ / kırmızı ✘ çerçeve + o soru için ipucu
+ *      ("Daha büyük bir enlem dene ↑"). İlk yanlış soru ekrana kaydırılır.
+ *      Öğrenci yanlış soruyu değiştirince işaret kalkar.
  *
  *  Pad oyun kuralı içermez: formu gönderince PREDICTION_SUBMIT olayını yayar,
  *  sonucu GameScene'den showResult() ile alır.
@@ -51,6 +56,8 @@
         latInput: $('pad-lat'),
         latOutput: $('pad-lat-out'),
         result: $('pad-result'),
+        submit: $('pad-submit'),
+        body: doc.querySelector('#pad .pad-body'),
       };
 
       this._buildOptions();
@@ -100,8 +107,11 @@
       this.el.form.reset();
       this._syncLatitude();
       this._setFormLocked(false);
+      this._clearMarks();
       this.el.result.className = 'pad-result hidden';
       this.el.result.innerHTML = '';
+      this.el.root.classList.remove('solved');
+      this.el.body.scrollTop = 0;
       this._buildSlots();
       this._highlight(null);
     }
@@ -117,9 +127,16 @@
     //  Sonuç gösterimi (GameScene çağırır)
     // ================================================================== //
 
+    /** Eksik soru(lar): ilgili sorular turuncu çerçeveyle işaretlenir */
     showErrors(errors) {
+      this._clearMarks();
+      const data = new FormData(this.el.form);
+      const missing = this.fields.filter((f) => f !== 'latitude' && !data.get(f));
+      missing.forEach((f) => this._mark(f, 'missing', 'Bunu seçmedin'));
       this.el.result.className = 'pad-result warn';
-      this.el.result.innerHTML = `<div class="res-head">✋ Eksik</div><p class="res-hint">${errors.map(escapeHtml).join(' · ')}</p>`;
+      this.el.result.innerHTML = `<div class="res-head">✋ ${missing.length > 1 ? `${missing.length} soru boş` : 'Bir soru boş'}</div>
+        <p class="res-hint">${errors.map(escapeHtml).join(' · ')}</p>`;
+      this._reveal(missing[0]);
     }
 
     /**
@@ -127,37 +144,84 @@
      * @param {object|null} reveal Doğruysa gerçek konum bilgisi + puan
      */
     showResult(result, reveal) {
+      this._clearMarks();
+      // Her soruyu kendi yerinde işaretle: ✔ yeşil, ✘ kırmızı + ipucu
+      result.feedback.forEach((f) => {
+        const arrow = f.direction === 'lower' ? ' ↓' : f.direction === 'higher' ? ' ↑' : '';
+        this._mark(f.field, f.ok ? 'ok' : 'bad', f.ok ? '' : `${f.hint}${arrow}`);
+      });
+
       if (result.isCorrect) {
         this._setFormLocked(true);
+        this.el.root.classList.add('solved');
         const stars = '★'.repeat(reveal.stars) + '☆'.repeat(3 - reveal.stars);
         const badges = reveal.badges.map((b) => `<span class="badge ok">${escapeHtml(b)}</span>`).join('');
         this.el.result.className = 'pad-result success';
         this.el.result.innerHTML = `
-          <div class="res-head">✔ Kurtarıldın! <span class="stars" aria-label="${reveal.stars} yıldız">${stars}</span></div>
-          <p class="reveal">${escapeHtml(reveal.name)}</p>
-          <div class="badges">${badges}</div>
-          <p class="summary">${escapeHtml(reveal.summary)}</p>
-          <p class="points">+${reveal.points} puan${reveal.fast ? ' · hızlı çözüm bonusu' : ''}</p>
+          <div class="res-main">
+            <div class="res-head">✔ Kurtarıldın! <span class="stars" aria-label="${reveal.stars} yıldız">${stars}</span></div>
+            <p class="reveal">${escapeHtml(reveal.name)}</p>
+            <div class="badges">${badges}</div>
+            <p class="summary">${escapeHtml(reveal.summary)}</p>
+            <p class="points">+${reveal.points} puan${reveal.fast ? ' · hızlı çözüm bonusu' : ''}</p>
+          </div>
           <button type="button" class="btn-signal" id="pad-next">🛩️ Sonraki bölgeye uç</button>`;
         this.doc.getElementById('pad-next').addEventListener('click', () => this.bus.emit(GS.EVENTS.LEVEL_NEXT));
         return;
       }
 
-      // Yanlış: rozetler + ilk yanlış alan için tek ipucu
-      const badges = result.feedback
-        .map((f) => {
-          const arrow = f.direction === 'lower' ? ' ↓' : f.direction === 'higher' ? ' ↑' : '';
-          return `<span class="badge ${f.ok ? 'ok' : 'bad'}">${f.ok ? '✔' : '✘'} ${escapeHtml(f.label)}${arrow}</span>`;
-        })
-        .join('');
-      const firstHint = result.feedback.find((f) => !f.ok);
-
+      // Yanlış: alt şeritte kısa özet (hangi sorular yanlış), ayrıntı soruların yanında
+      const wrong = result.feedback.filter((f) => !f.ok);
+      const names = wrong.map((f) => {
+        const arrow = f.direction === 'lower' ? ' ↓' : f.direction === 'higher' ? ' ↑' : '';
+        return `<span class="badge bad">✘ ${escapeHtml(f.label)}${arrow}</span>`;
+      }).join('');
       this.el.result.className = 'pad-result fail';
       this.el.result.innerHTML = `
-        <div class="res-head">✘ Yanlış koordinat <small>${result.correctCount}/${result.total}</small></div>
-        <div class="badges">${badges}</div>
-        ${firstHint ? `<p class="res-hint">💡 ${escapeHtml(firstHint.hint)}</p>` : ''}
-        <p class="res-sub">⚠️ Barlar bir süre 2 kat hızlı düşecek</p>`;
+        <div class="res-head">✘ ${result.correctCount}/${result.total} doğru <small>⚠️ Barlar bir süre 2 kat hızlı düşecek</small></div>
+        <div class="badges">${names}<span class="res-tip">Kırmızı soruları düzelt, tekrar gönder</span></div>`;
+      this._reveal(wrong[0] && wrong[0].field);
+      // Sonuç her denemede yeniden "sallanır": aynı sonuç gelse de fark edilsin
+      this.el.result.classList.remove('shake');
+      void this.el.result.offsetWidth;
+      this.el.result.classList.add('shake');
+    }
+
+    // ------------------------------------------------------------------ //
+    //  Soru işaretleri
+    // ------------------------------------------------------------------ //
+    _fieldset(field) {
+      return this.el.form.querySelector(`fieldset[data-field="${field}"]`);
+    }
+
+    /** @param {'ok'|'bad'|'missing'} state */
+    _mark(field, state, note) {
+      const fs = this._fieldset(field);
+      if (!fs) return;
+      fs.classList.add(`is-${state}`);
+      const legend = fs.querySelector('legend');
+      legend.insertAdjacentHTML('beforeend',
+        `<span class="field-mark">${state === 'ok' ? '✔ Doğru' : state === 'bad' ? '✘ Yanlış' : '✋ Boş'}</span>`);
+      if (note) legend.insertAdjacentHTML('afterend', `<p class="field-note">💡 ${escapeHtml(note)}</p>`);
+    }
+
+    _unmark(fs) {
+      fs.classList.remove('is-ok', 'is-bad', 'is-missing');
+      fs.querySelectorAll('.field-mark, .field-note').forEach((n) => n.remove());
+    }
+
+    _clearMarks() {
+      this.el.form.querySelectorAll('fieldset').forEach((fs) => this._unmark(fs));
+    }
+
+    /** İlk yanlış/boş soruyu görünür yap (telefonda sorular aşağıda kalabilir) */
+    _reveal(field) {
+      const fs = field && this._fieldset(field);
+      if (!fs) return;
+      const body = this.el.body;
+      const top = fs.getBoundingClientRect().top - body.getBoundingClientRect().top;
+      const visible = top >= 0 && top + 60 <= body.clientHeight;
+      if (!visible) body.scrollTo({ top: body.scrollTop + top - 12, behavior: 'smooth' });
     }
 
     /** Sahne kapanırken tüm DOM dinleyicilerini kaldır */
@@ -204,6 +268,11 @@
         }
       });
       on(this.el.latInput, 'input', () => this._syncLatitude());
+      // Öğrenci bir soruyu değiştirince o sorunun ✔/✘ işareti kalkar
+      on(this.el.form, 'change', (e) => {
+        const fs = e.target.closest('fieldset');
+        if (fs && !this.el.root.classList.contains('solved')) this._unmark(fs);
+      });
 
       on(this.el.form, 'submit', (e) => {
         e.preventDefault(); // sayfa yenilenmesin
@@ -224,6 +293,8 @@
 
     _setFormLocked(locked) {
       this.el.form.querySelectorAll('input, button').forEach((n) => (n.disabled = locked));
+      this.el.submit.disabled = locked;
+      this.el.submit.classList.toggle('hidden', locked);
     }
 
     /** Az önce incelenen kartı vurgula */

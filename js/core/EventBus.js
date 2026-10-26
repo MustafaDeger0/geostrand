@@ -36,6 +36,7 @@
     UI_USE_ITEM: 'ui:useItem',            // 'water' | 'heat'
     UI_GUIDE: 'ui:guide',                 // Rehber'i aç (sekme adı)
     UI_EDIT_HERO: 'ui:editHero',          // Karakter oluşturucuyu aç
+    UI_INTERACT: 'ui:interact',           // Dokunmatik "İncele" düğmesi
   });
 
   class EventBus {

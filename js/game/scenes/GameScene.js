@@ -67,6 +67,12 @@
       // --- Oyun sistemleri (Phaser'a bağlı) ------------------------------
       this.worldBuilder = new GS.WorldBuilder(this, C.WORLD);
       this.interaction = new GS.InteractionSystem(this, this.player, this.bus, C.PLAYER.interactRange);
+      // Telefon / tablet: kaydır (joystick) ya da dokunduğun yere yürü
+      this.touch = new GS.TouchControls(this, this.player, {
+        range: C.PLAYER.interactRange,
+        getTargets: () => (this.world ? [...this.world.interactables, ...this.world.crates] : []),
+        onInteract: (obj) => this.bus.emit(GS.EVENTS.INTERACT, obj),
+      });
       this.lighting = new GS.LightingOverlay(this, C.DAY_NIGHT);
       this.weatherFX = new GS.WeatherFX(this, document);
 
@@ -81,6 +87,7 @@
       this.hud.setMuted(this.audio.muted);
       this.hud.setFullscreen(!!document.fullscreenElement);
       this.hud.setHero(this.hero);
+      this.interaction.onFocusChange((obj) => this.hud.setInteractTarget(obj));
 
       // --- Bağlantılar ----------------------------------------------------
       this._bindEvents();
@@ -150,7 +157,7 @@
           newBest: newBest && this.score.total > 0,
         });
       });
-      bus.on(E.RESTART, () => this.scene.restart());
+      bus.on(E.RESTART, () => this._restart());
 
       // Arayüz düğmeleri
       bus.on(E.UI_OPEN_PAD, () => this._openPad());
@@ -160,6 +167,7 @@
       bus.on(E.UI_USE_ITEM, (type) => this._useItem(type));
       bus.on(E.UI_GUIDE, (tab) => this._openGuide(tab));
       bus.on(E.UI_EDIT_HERO, () => this._editHero());
+      bus.on(E.UI_INTERACT, () => this.interaction.trigger());
 
       // Ses ayarları
       bus.on(E.VOLUME_CHANGED, ({ channel, value }) => {
@@ -186,11 +194,11 @@
     //  OYUN DÖNGÜSÜ
     // ================================================================== //
     update(time, delta) {
+      if (!this.world) return;
       const dt = Math.min(delta / 1000, 0.1); // sekme arka plandayken dev sıçramaları engelle
       const dead = this.survival.isDead;
-      // Tam duraklama: menü, rehber, karakter oluşturucu, uçuş
-      const halted = this.menu.isOpen || this.traveling || GS.guide.isOpen || GS.creator.isOpen;
-      const blocked = halted || this.pad.isOpen || dead; // oyuncu hareket edemez
+      const halted = this._isHalted();                    // zaman durur
+      const blocked = this._isBlocked() || dead;           // oyuncu hareket edemez
 
       if (!dead && !halted) {
         const gameDt = dt * (this.pad.isOpen ? this.cfg.PAD.timeScale : 1);
@@ -200,8 +208,10 @@
         this.survival.update(gameDt, this._currentEnvironment());   // 2) Hayatta kalma
       }
 
-      // 3) Oyuncu ve etkileşim
-      this.player.tick(blocked);
+      // 3) Oyuncu ve etkileşim (klavye + dokunmatik)
+      this.touch.setEnabled(!blocked);
+      if (this.player.keyboardActive) this.touch.cancelMove();
+      this.player.tick(blocked, this.touch.update(dt));
       this.interaction.update(!blocked);
 
       // 4) Görsel güncellemeler
@@ -218,6 +228,21 @@
         moving: !blocked && this.player.body.speed > 5,
         paused: blocked,
       });
+    }
+
+    /** Zaman tamamen durur mu? (menü, rehber, karakter oluşturucu, uçuş) */
+    _isHalted() {
+      return this.menu.isOpen || this.traveling || GS.guide.isOpen || GS.creator.isOpen;
+    }
+
+    /** Oyuncu hareket edemez mi? (duraklama ya da Pad açık) */
+    _isBlocked() {
+      return this._isHalted() || this.pad.isOpen;
+    }
+
+    /** Baştan başla (menü / oyun sonu) */
+    _restart() {
+      this.scene.restart();
     }
 
     /**
@@ -359,41 +384,53 @@
     }
 
     _loadNextLocation() {
+      const location = this.locations.next();
+      const n = this.locations.levelNumber;
+      const tiers = this.cfg.PROGRESSION.tiers;
+      const tier = GS.Progression.tierFor(n, tiers);
+      const weather = GS.WEATHERS[GS.WeatherPicker.pick(location.climate, tier.weatherChance, GS.CLIMATE_WEATHER)];
+      this._buildLocation(location, tier, weather, { crates: tier.crates, label: `Bölge ${n}`, levelNumber: n });
+
+      if (GS.Progression.isUnlockLevel(n, tiers) && tier.unlock) {
+        this.hud.showUnlock(tier.unlock);
+      } else if (weather.key !== 'clear') {
+        this.hud.toast(`${weather.icon} ${weather.label}: ${weather.why}`, 'info');
+      }
+    }
+
+    /**
+     * Bir konumu haritaya kur ve tüm sistemleri ona göre sıfırla.
+     * @param {object} location
+     * @param {object} tier   kademe (index dahil)
+     * @param {object} weather GS.WEATHERS öğesi
+     * @param {{crates:number, label:string, levelNumber:number}} opts
+     */
+    _buildLocation(location, tier, weather, { crates, label, levelNumber }) {
       if (this.world) {
         this.worldCollider.destroy();
         this.world.destroy();
       }
       this.indicators.clear();
-
-      const location = this.locations.next();
-      const n = this.locations.levelNumber;
-      const tiers = this.cfg.PROGRESSION.tiers;
-      this.tier = GS.Progression.tierFor(n, tiers);
-      this.weather = GS.WEATHERS[GS.WeatherPicker.pick(location.climate, this.tier.weatherChance, GS.CLIMATE_WEATHER)];
-      const clues = GS.ClueFactory.build(location, this.tier.clues, { landforms: GS.LANDFORMS });
+      this.tier = tier;
+      this.weather = weather;
+      const clues = GS.ClueFactory.build(location, tier.clues, { landforms: GS.LANDFORMS });
 
       this.player.setPosition(this.spawn.x, this.spawn.y);
       this.player.body.reset(this.spawn.x, this.spawn.y);
-      this.world = this.worldBuilder.build(location, clues, this.spawn, { crates: this.tier.crates });
+      this.world = this.worldBuilder.build(location, clues, this.spawn, { crates });
       this.worldCollider = this.physics.add.collider(this.player, this.world.obstacles);
       this.interaction.setTargets([...this.world.interactables, ...this.world.crates]);
       this.levelSolved = false;
       this.found = new Set();
       this.score.startLevel();
 
-      this.pad.resetForLocation(`Bölge ${n}`, this.tier);
-      this.hud.setRegion(n, this.tier.name);
+      this.pad.resetForLocation(label, tier);
+      this.hud.setRegion(levelNumber, tier.name);
       this._updateObjective();
-      this.hud.setWeather(this.weather);
-      this.weatherFX.set(this.weather);
-      this.audio.setClimate(location.climate, this.weather);
+      this.hud.setWeather(weather);
+      this.weatherFX.set(weather);
+      this.audio.setClimate(location.climate, weather);
       this.audio.sfx('arrive');
-
-      if (GS.Progression.isUnlockLevel(n, tiers) && this.tier.unlock) {
-        this.hud.showUnlock(this.tier.unlock);
-      } else if (this.weather.key !== 'clear') {
-        this.hud.toast(`${this.weather.icon} ${this.weather.label}: ${this.weather.why}`, 'info');
-      }
     }
 
     _updateObjective() {
@@ -409,11 +446,16 @@
     //  YARDIMCILAR
     // ================================================================== //
 
-    /** Ekran boyutuna göre yakınlaştırma: her ekranda benzer miktarda dünya görünür */
+    /**
+     * Ekran boyutuna göre yakınlaştırma: her ekranda benzer ALANDA dünya görünür.
+     * Alan esaslı olduğu için telefon dikey de tutulsa yatay da tutulsa aynı
+     * miktarda harita görünür (dikeyde daha uzun, yatayda daha geniş).
+     */
     _applyZoom() {
       const { width, height } = this.scale;
       const c = this.cfg.CAMERA;
-      const zoom = Phaser.Math.Clamp(Math.min(width / c.viewWidth, height / c.viewHeight), c.minZoom, c.maxZoom);
+      const byArea = Math.sqrt((width * height) / (c.viewWidth * c.viewHeight));
+      const zoom = Phaser.Math.Clamp(byArea, c.minZoom, c.maxZoom);
       this.cameras.main.setZoom(zoom);
     }
 
@@ -484,6 +526,7 @@
       this.menu.destroy();
       this.hud.destroy();
       this.indicators.destroy();
+      this.touch.destroy();
       this.bus.clear();
       this.scale.off('resize', this._onResize);
       document.removeEventListener('fullscreenchange', this._onFullscreenChange);

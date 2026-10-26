@@ -92,7 +92,7 @@
       const s = GS.CONFIG.SCORE;
       return `
         <ol class="guide-steps">
-          <li><b>İncele.</b> Haritadaki sarı <b>?</b> işaretli nesnelere yürü, <kbd>E</kbd> ile incele. Ekran dışındakileri kenardaki oklar gösterir.</li>
+          <li><b>İncele.</b> Haritadaki sarı <b>?</b> işaretli nesnelere yürü ve incele (<kbd>E</kbd> ya da telefonda nesneye dokun). Ekran dışındakileri kenardaki oklar gösterir.</li>
           <li><b>Tahmin et.</b> <kbd>P</kbd> ile Pad'i aç, soruları cevapla ve koordinatı gönder.</li>
           <li><b>Kurtul.</b> Doğruysa çantana su ve ısı eklenir, sonraki bölgeye uçarsın. Yanlışsa barlar 45 saniye 2 kat hızlı düşer.</li>
         </ol>
@@ -115,6 +115,19 @@
           <dt><kbd>P</kbd></dt><dd>Pad</dd>
           <dt><kbd>1</kbd> <kbd>2</kbd></dt><dd>Su / ısı kullan</dd>
           <dt><kbd>F</kbd> <kbd>M</kbd> <kbd>Esc</kbd></dt><dd>Tam ekran, ses, menü</dd>
+        </dl>
+        <h3>Telefon ve tablet</h3>
+        <dl class="keys">
+          <dt>👉 Kaydır</dt><dd>Parmağını ekranda kaydır: altında beliren joystick'le yürü (az kaydır = yavaş)</dd>
+          <dt>👆 Dokun</dt><dd>Dokunduğun yere yürür. <b>?</b> nesnesine ya da 📦 sandığa dokunursan gider ve inceler</dd>
+          <dt>👆 İncele</dt><dd>Yakında nesne varken sağ altta beliren büyük düğme</dd>
+          <dt>💧 🔥 🧭 ☰</dt><dd>Su / ısı kullan, Pad, menü</dd>
+        </dl>
+        <h3>Ekran neden karardı?</h3>
+        <dl class="keys">
+          <dt>❤️ Kararma + nabız</dt><dd>Canın azalıyor. Su ve ısıyı yükselt; ikisi de 50'nin üstündeyken can yavaşça dolar</dd>
+          <dt>🟠 Sıcak kenarlar</dt><dd>Susuz kalıyorsun: 💧 Su Matarası kullan</dd>
+          <dt>🔵 Kırağı</dt><dd>Vücudun soğuyor: 🔥 Isı Paketi kullan</dd>
         </dl>`;
     }
 

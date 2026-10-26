@@ -9,7 +9,7 @@
  *  • Ses tarayıcı kuralı gereği ancak kullanıcı etkileşiminde başlatılabilir.
  *  • Rehber ve karakter oluşturucu oyundan önce de kullanılabildiği için
  *    burada, sahneden bağımsız olarak bir kez oluşturulur (GS.guide, GS.creator).
- *  Sahne sırası: BootScene (dokular) → GameScene (oyun).
+ *  Sahne sırası: BootScene (dokular) → GameScene.
  * ============================================================================
  */
 (function (GS) {
@@ -36,14 +36,14 @@
   const best = GS.readBestScore();
   if (best > 0) {
     document.getElementById('intro-best').innerHTML =
-      `En iyi puanın: <b>${best.toLocaleString('tr-TR')}</b>. Enter ile başlayabilir, <kbd>M</kbd> ile sesi kapatabilirsin.`;
+      `En iyi puanın: <b>${best.toLocaleString('tr-TR')}</b>.<span class="kb-only"> Enter ile başlayabilir, <kbd>M</kbd> ile sesi kapatabilirsin.</span>`;
   }
 
+  /** Phaser oyununu kur */
   function launch() {
-    if (GS.game) return;
     intro.classList.add('hidden');
     GS.audio.init();
-
+    if (GS.game) return;
     GS.game = new Phaser.Game({
       type: Phaser.AUTO,              // WebGL varsa onu, yoksa Canvas kullan
       parent: 'game-container',
@@ -57,6 +57,7 @@
         width: window.innerWidth,
         height: window.innerHeight,
       },
+      input: { activePointers: 3 },   // dokunmatik: joystick + düğmeler aynı anda
       scene: [GS.BootScene, GS.GameScene],
     });
   }

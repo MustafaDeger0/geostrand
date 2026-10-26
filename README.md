@@ -7,7 +7,8 @@ Oyuncunun uçağı bilinmeyen bir yere düşer. Haritadaki **ağacı**, **topra�
 **yarım küreyi**, **iklim tipini** ve **enlemi** tahmin eder. Bölge 3'ten itibaren **yer şekli** (dağ / ova / plato),
 Bölge 5'ten itibaren **kıta** sorusu eklenir. Doğru tahmin kurtarma getirir, yanlış tahmin hayatta kalmayı zorlaştırır.
 
-**İçerik:** 19 gerçek konum · 6 kıta · 6 iklim · 3 yer şekli · 5 hava olayı · kişiselleştirilebilir kâşif · rehber
+**İçerik:** 19 gerçek konum · 6 kıta · 6 iklim · 3 yer şekli · 5 hava olayı · kişiselleştirilebilir kâşif · rehber ·
+**bilgisayar, tablet ve telefonda** oynanır (dokunmatik kontroller).
 
 ---
 
@@ -21,6 +22,25 @@ Bölge 5'ten itibaren **kıta** sorusu eklenir. Doğru tahmin kurtarma getirir, 
 > `https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js` dosyasını indirip `lib/` klasörüne koyun ve
 > `index.html` içindeki `<script src="...phaser.min.js">` satırını `lib/phaser.min.js` olarak değiştirin.
 
+## Telefon ve Tablet
+
+Oyun telefonda ve tablette de tarayıcıdan oynanır; ekran **dikey de yatay da** kullanılabilir.
+Dosyaları bir web sunucusuna (ör. GitHub Pages, Netlify, okulun sunucusu) koyup bağlantıyı açmak yeterlidir.
+
+| Dokunuş | İşlev |
+|---|---|
+| 👉 **Kaydır** | Parmağını ekranda kaydır: altında joystick belirir, o yöne yürürsün (az kaydırınca yavaş yürür) |
+| 👆 **Dokun** | Dokunduğun yere yürür. Sarı **?** nesnesine ya da 📦 sandığa dokunursan yanına gidip kendiliğinden inceler |
+| 👆 **İncele düğmesi** | Yakında bir nesne varken sağ altta beliren büyük turuncu düğme |
+| 💧 🔥 | Su / ısı kullan · 🧭 **Pad** · ☰ **Menü** (ses ve tam ekran telefonda menüdedir) |
+
+- Arayüz ekran boyutuna göre düzenlenir: telefonda göstergeler küçülür, Pad ve menüler tam ekran açılır.
+- Kamera yakınlaştırması ekran **alanına** göre hesaplanır; dikey ya da yatay tutulduğunda benzer miktarda harita görünür.
+- Çentikli ekranlarda (iPhone) düğmeler güvenli alanın içinde kalır. iPhone Safari tam ekran API'sini desteklemediği için
+  orada tam ekran düğmesi gizlenir; "Ana Ekrana Ekle" ile açılırsa oyun tam ekran çalışır.
+
+---
+
 | Tuş | İşlev |
 |---|---|
 | `WASD` / Ok tuşları | Hareket |
@@ -31,8 +51,9 @@ Bölge 5'ten itibaren **kıta** sorusu eklenir. Doğru tahmin kurtarma getirir, 
 | `F` | Tam ekran aç/kapat |
 | `M` | Sesi aç/kapat |
 
-Sağ alttaki eylem çubuğu (Pad, ses, tam ekran, menü) fareyle de kullanılır.
 | `R` | Oyun bitince yeniden başla |
+
+Sağ alttaki eylem çubuğu (Pad, ses, tam ekran, menü) fareyle de kullanılır. Fareyle haritaya tıklamak da o noktaya yürütür.
 
 ---
 
@@ -47,6 +68,7 @@ geostrand/
 ├── css/style.css               Tüm arayüz stilleri (renkler :root değişkenlerinde)
 ├── js/
 │   ├── core/
+│   │   ├── Device.js           Dokunmatik mi klavye mi? (metinler ve düğmeler buna göre)
 │   │   ├── EventBus.js         Modüller arası olay sistemi + olay adları (EVENTS)
 │   │   └── Config.js           TÜM denge sayıları (hızlar, bonus, ceza, gün uzunluğu)
 │   ├── data/
@@ -68,20 +90,21 @@ geostrand/
 │   ├── game/                   ◀ PHASER KATMANI (çizim, fizik, girdi)
 │   │   ├── entities/Player.js        Top-down hareket
 │   │   ├── entities/Interactable.js  Ağaç / toprak / güneş çubuğu
-│   │   ├── systems/InteractionSystem.js  En yakın nesne + E tuşu
+│   │   ├── systems/InteractionSystem.js  En yakın nesne + E tuşu / İncele düğmesi
+│   │   ├── systems/TouchControls.js  Dokunmatik: kaydır (joystick) ya da dokunduğun yere yürü
 │   │   ├── systems/TerrainPainter.js Zemin dokusu, dağ, göl, nehir, köprü, kum tepesi çizer
 │   │   ├── systems/WorldBuilder.js   Konumdan harita kurar / yıkar (yerleşim + çarpışma)
 │   │   ├── systems/LightingOverlay.js Gece karartması + fener ışığı
 │   │   ├── systems/WeatherFX.js      Yağmur / kar / kum parçacıkları + pus
 │   │   ├── scenes/BootScene.js       Görselleri kodla üretir (resim dosyası yok)
-│   │   └── scenes/GameScene.js       Orkestra şefi: modülleri bağlar, oyun döngüsü
+│   │   ├── scenes/GameScene.js       Orkestra şefi: modülleri bağlar, oyun döngüsü
 │   ├── audio/                  ◀ SES (Web Audio, dosyasız)
 │   │   ├── AudioEngine.js      Kanallar, kompresör, yankı, efektler, ayarlar
 │   │   ├── MusicGenerator.js   İklime göre canlı üretilen arka plan müziği
 │   │   └── AmbientLayer.js     Rüzgâr, yağmur, su, kuş, böcek, ayak sesi
 │   ├── ui/                     ◀ HTML/DOM ARAYÜZÜ
-│   │   ├── HUD.js              Barlar, görev göstergesi, saat, çanta, eylem çubuğu, uyarılar
-│   │   ├── GeographerPad.js    Pop-up form: Yarım Küre / İklim / Enlem
+│   │   ├── HUD.js              Barlar, görev, saat, çanta, eylem çubuğu, hayati durum efektleri
+│   │   ├── GeographerPad.js    Pop-up form + sonuç şeridi, soruların yanında ✔/✘
 │   │   ├── PauseMenu.js        Duraklatma, ses ayarları, nasıl oynanır
 │   │   ├── OffscreenIndicators.js  Ekran dışındaki ipuçlarını gösteren kenar okları
 │   │   ├── CharacterCreator.js "Kâşifini hazırla" ekranı (canlı önizlemeli)
@@ -117,7 +140,11 @@ SurvivalSystem ──PLAYER_DIED──▶ GameScene ──▶ HUD.showGameOver()
   Bulunan kart **3 renkli etiket + tek kısa cümle** gösterir. Gölge kartında, gölgenin **yönünü ve uzunluğunu çizen küçük bir pusula şeması** vardır.
 - Açılır **"Gölgeden enlem bul"** cetveli: gölge uzunluğu ↔ enlem karşılığı tek satırda.
 - Sağ: ① **Yarım Küre** ② **İklim** (6 seçenek, `climates.js`'ten otomatik üretilir) ③ **Enlem** (0°–90° kaydırıcı).
-- Sonuç: Her alan için ✔/✘ **rozet**, yanlışsa yalnızca **tek bir ipucu cümlesi** (enlem için ↑/↓ yön oku).
+- Sonuç **kaydırmadan** görülür:
+  - Pad'in altındaki şerit hep görünür: "✘ 2/3 doğru" + yanlış soruların adları, doğruysa ⭐ yıldız, gerçek konum ve "Sonraki bölgeye uç".
+  - **Her soru kendi yerinde** yeşil ✔ / kırmızı ✘ çerçeve alır, yanlış sorunun hemen altında o soruya özel ipucu yazar
+    (enlem için ↑/↓ yön oku). İlk yanlış soru görünmüyorsa Pad oraya kendiliğinden kayar. Boş bırakılan sorular turuncu işaretlenir.
+  - Öğrenci yanlış soruyu değiştirince o sorunun işareti kalkar.
 - Pad açıkken zaman **¼ hızda** akar (`CONFIG.PAD.timeScale`), oyuncu durur, Phaser klavyesi susturulur.
 
 ### 3. Hayatta Kalma Bar Algoritması (`SurvivalSystem.update`)
@@ -236,7 +263,16 @@ Tarayıcılar sesi ancak kullanıcı etkileşiminden sonra başlatır; ses bu y�
 - **Duraklatma menüsü (Esc):** Oyun tamamen durur. Müzik / doğa sesleri / efekt / ana ses kaydırıcıları, nasıl oynanır, tam ekran,
   baştan başla (yanlışlıkla basılmasın diye iki kez onay ister).
 - **Uçuş perdesi:** Doğru tahminden sonra bölgeler arası kısa bir geçiş.
-- **Kenar uyarıları:** Su, ısı ya da can 30'un altına inince ekran kenarı sarı, mavi ya da kırmızıya döner.
+- **Hayati durum efektleri:** Barlar düştükçe ekran da değişir, öğrenci HUD'a bakmadan durumu hisseder:
+
+  | Durum | Ekranda |
+  |---|---|
+  | ❤️ Can < 60 | Ekran giderek kararır, renkler solar, kenarlar koyu kırmızı; can < 35'te **kalp atışı** gibi nabız (can azaldıkça hızlanır) |
+  | 💧 Su < 35 | Sıcak, kavruk turuncu kenarlar, görüntü sepyaya döner |
+  | 🌡️ Isı < 35 | Buz mavisi kırağı kenarlar, soğuk renk tonu |
+
+  Ortada ne yapılacağını söyleyen bir uyarı çıkar ("💧 Susuz kalıyorsun · Su Matarası kullan"); uyarıya dokununca/tıklayınca
+  eşya kullanılır, çantadaki ilgili eşya da parlar.
 - **Erişilebilirlik:** Klavye odağı görünür, `prefers-reduced-motion` açıksa animasyonlar kapanır, dar ekranda düzen sadeleşir.
 
 ### 8. Kademeler ve Çeşitlilik ("her bölge farklı")

@@ -3,7 +3,8 @@
  *  GeoStrand — Oyuncu (Player)
  * ============================================================================
  *  2D top-down hareket + 4 yönlü yürüme animasyonu:
- *   - WASD veya ok tuşları
+ *   - WASD veya ok tuşları; telefonda/tablette dokunmatik yön vektörü
+ *     (TouchControls: joystick ya da dokunulan yere yürüme)
  *   - Çapraz harekette hız vektörü normalize edilir
  *     (aksi halde çaprazda √2 ≈ %41 daha hızlı gidilirdi)
  *   - Hangi eksende daha hızlı gidiliyorsa o yöne bakar (aşağı/yukarı/sol/sağ)
@@ -47,6 +48,12 @@
       });
     }
 
+    /** Klavyeden yön tuşu basılı mı? (dokunmatik otomatik yürümeyi iptal etmek için) */
+    get keyboardActive() {
+      const k = this.keys;
+      return [k.up, k.down, k.left, k.right, k.up2, k.down2, k.left2, k.right2].some((key) => key.isDown);
+    }
+
     /** Karakter oluşturucuda değişiklik yapılınca yeni görünüme geç */
     setAppearance(appearance) {
       this.sheetKey = GS.CharacterRenderer.buildSpritesheet(this.scene, GS.CharacterRenderer.normalize(appearance));
@@ -57,23 +64,32 @@
     /**
      * Her karede GameScene tarafından çağrılır.
      * @param {boolean} frozen Pad/menü açıksa veya oyuncu öldüyse true → hareket yok
+     * @param {{x:number,y:number}} [touch] dokunmatik yön (uzunluk 0–1 = hız oranı)
      */
-    tick(frozen) {
+    tick(frozen, touch) {
       let vx = 0;
       let vy = 0;
+      let speedRatio = 1;
       if (!frozen) {
         const k = this.keys;
         vx = (k.right.isDown || k.right2.isDown ? 1 : 0) - (k.left.isDown || k.left2.isDown ? 1 : 0);
         vy = (k.down.isDown || k.down2.isDown ? 1 : 0) - (k.up.isDown || k.up2.isDown ? 1 : 0);
+        // Klavye basılı değilse dokunmatik yön kullanılır
+        if (!vx && !vy && touch) {
+          vx = touch.x;
+          vy = touch.y;
+          speedRatio = Math.min(1, Math.hypot(vx, vy));
+        }
       }
 
       const length = Math.hypot(vx, vy);
       if (length > 0) {
-        vx /= length; // normalize
-        vy /= length;
+        vx = (vx / length) * speedRatio; // normalize (çaprazda hızlanma yok)
+        vy = (vy / length) * speedRatio;
         // Baskın eksene göre yön (çaprazda yatay öncelikli)
         this.facing = Math.abs(vx) >= Math.abs(vy) ? (vx > 0 ? 'right' : 'left') : (vy > 0 ? 'down' : 'up');
         this.anims.play(`${this.sheetKey}-walk-${this.facing}`, true);
+        this.anims.timeScale = 0.55 + 0.45 * speedRatio; // yavaş yürürken adımlar da yavaşlar
       } else if (this.anims.isPlaying) {
         this.anims.stop();
         this.setFrame(`${this.facing}-0`);

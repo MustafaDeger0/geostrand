@@ -5,7 +5,8 @@
  *  Her karede:
  *   1) Oyuncuya en yakın, menzil içindeki nesneyi bulur.
  *   2) Üstünde "[E] Ağacı incele" gibi bir ipucu balonu gösterir.
- *   3) E tuşuna basılırsa INTERACT olayını yayar.
+ *   3) E tuşuna basılırsa (ya da telefonda "İncele" düğmesine / nesneye
+ *      dokunulursa: trigger()) INTERACT olayını yayar.
  *  Olayı kimin dinlediğini bilmez (GameScene dinler ve Pad'i açar).
  * ============================================================================
  */
@@ -75,7 +76,18 @@
       }
     }
 
+    /** Dokunmatik "İncele" düğmesi: odaktaki nesneyi incele */
+    trigger() {
+      if (this.focused) this.bus.emit(GS.EVENTS.INTERACT, this.focused);
+    }
+
+    /** Odak değişince haber ver (HUD'daki İncele düğmesi için) */
+    onFocusChange(fn) {
+      this._focusListener = fn;
+    }
+
     _setFocus(obj) {
+      if (obj !== this.focused && this._focusListener) this._focusListener(obj);
       if (this.focused && this.focused !== obj && this.focused.active) this.focused.setHighlighted(false);
       this.focused = obj;
 
@@ -86,7 +98,7 @@
       // 2) İpucu balonu
       obj.setHighlighted(true);
       this.promptText
-        .setText(`E · ${obj.prompt}`)
+        .setText(GS.Device.touch ? `👆 ${obj.prompt}` : `E · ${obj.prompt}`)
         .setPosition(obj.x, obj.y - obj.displayHeight / 2 - 30)
         .setVisible(true);
     }
