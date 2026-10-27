@@ -1576,3 +1576,13 @@ body.race-mode .weather-chip { display: none; }
 @media (orientation: landscape) and (max-height: 600px) and (min-height: 481px) {
   .intro .lead { display: none; }
 }
+/* Yatay ekranda yazı ve dünya birlikte ortada dursun (sola yaslanmasın, arada dev boşluk kalmasın) */
+@media (orientation: landscape) {
+  .intro-fit {
+    width: auto; max-width: 100%;
+    grid-template-columns: minmax(0, 620px) auto;
+    justify-content: center;
+    gap: clamp(28px, 5vw, 110px);
+  }
+  .intro .globe { width: min(36vw, 66vh); }
+}
