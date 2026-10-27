@@ -3,7 +3,11 @@
 **BTE 422 Eğitsel Oyun ve Oyunlaştırma** dersi için 2D top-down eğitsel coğrafya hayatta kalma oyunu.
 Motor: **HTML5 + Phaser 3.80** (JavaScript). Kurulum gerektirmez, tarayıcıda çalışır.
 
-Oyuncunun uçağı bilinmeyen bir yere düşer. Haritadaki **ağacı**, **toprağı** ve **güneş çubuğunu** inceleyerek
+**Hikâye (2080):** Küresel İklim Örgütü'nün Geo-Core uydusu ilk canlı ışınlanma testinde bir güneş fırtınasına yakalanır;
+Geo-Teleporter'ın koordinat verileri silinir ve baş araştırmacı **Dr. Geo** dünyanın bilinmeyen bir noktasına düşer.
+Kurtarma helikopterine S.O.S gönderebilmek için konumunu doğadaki ipuçlarından kendisi hesaplamalıdır.
+
+Oyuncu haritadaki **ağacı**, **toprağı** ve **güneş çubuğunu** inceleyerek
 **yarım küreyi**, **iklim tipini** ve **enlemi** tahmin eder. Bölge 3'ten itibaren **yer şekli** (dağ / ova / plato),
 Bölge 5'ten itibaren **kıta** sorusu eklenir. Doğru tahmin kurtarma getirir, yanlış tahmin hayatta kalmayı zorlaştırır.
 
@@ -16,7 +20,8 @@ Bölge 5'ten itibaren **kıta** sorusu eklenir. Doğru tahmin kurtarma getirir, 
 
 1. Klasörü açın, `index.html` dosyasına çift tıklayın (Chrome / Edge / Firefox).
 2. **Göreve başla** düğmesine veya **Enter** tuşuna basın. İlk oyunda **Kâşifini hazırla** ekranı açılır
-   (ad, ten rengi, saç modeli/rengi, şapka, ceket, çanta). Oyun tüm pencereyi kaplar; **F** ile tam ekrana geçer.
+   (ad, ten rengi, saç modeli/rengi, şapka, ceket, çanta), ardından **açılış animasyonu** oynar (Esc / "Geç" ile atlanır).
+   Oyun tüm pencereyi kaplar; **F** ile tam ekrana geçer. Esc menüsündeki **🏠 Ana menü** başlık ekranına döndürür.
 
 > Phaser internetten (CDN) yüklenir. **İnternetsiz** sınıf ortamı için:
 > `https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js` dosyasını indirip `lib/` klasörüne koyun ve
@@ -108,6 +113,7 @@ geostrand/
 │   │   ├── PauseMenu.js        Duraklatma, ses ayarları, nasıl oynanır
 │   │   ├── OffscreenIndicators.js  Ekran dışındaki ipuçlarını gösteren kenar okları
 │   │   ├── CharacterCreator.js "Kâşifini hazırla" ekranı (canlı önizlemeli)
+│   │   ├── IntroCutscene.js    4 sahnelik hikâye girişi (altyazı, ses, geç düğmesi)
 │   │   └── Guide.js            Rehber: nasıl oynanır, iklimler, yer şekilleri, kıtalar, hava
 │   └── main.js                 Tam ekran oyunu başlatır
 └── tests/logic.test.js         30 birim testi →  node --test tests/logic.test.js
@@ -309,8 +315,37 @@ Akdeniz iklimi dört kıtada (Antalya, Madrid, Cape Town, Perth).
   Canlı önizleme yürür ve döner (↺ ↻). Seçim tarayıcıda saklanır; HUD'da kâşifin adı ve portresi görünür.
 - Oyun sırasında **Esc → Kâşifi düzenle** ile değiştirilir; karakter anında yeni görünüme geçer.
 
-### 10. Rehber
+### 10. Açılış Animasyonu (`IntroCutscene.js`)
+
+"Göreve başla"ya basınca 4 sahnelik hikâye girişi oynar. Görseller kodla (HTML/CSS/SVG) çizilir, sesler Web Audio ile üretilir;
+resim, video ya da ses dosyası yoktur. Altyazılar daktilo efektiyle akar.
+
+| Sahne | Görsel | Ses | Altyazı |
+|---|---|---|---|
+| 1. Laboratuvar ve uydu krizi | Pencerede Geo-Core uydusu, güneşten yayılan patlama halkaları uyduyu vurur; kırmızı döner alarm ışıkları, çöken sinyal grafikleri, ekran cızırtısı | İki tonlu siren, statik cızırtı | "2080… Geo-Core uydusu yörüngede ağır bir güneş fırtınasına yakalandı. Sistem çöküyor!" |
+| 2. Kuantum sıçraması | Işınlanma kapsülünde **oyuncunun kendi kâşifi**; koordinatlar (00°00′N…) hızla rastgele değişir, ERR kodları düşer, halkalar hızlanır; mavi-beyaz patlama ve ekran sarsıntısı | Yükselen enerji uğultusu, patlama + gümbürtü | "HATA: Koordinat verileri silindi!…" |
+| 3. Düşüş ve bilinmezlik | Ekran kararır, **göz kapakları** kırparak açılır, bulanıklık geçer: **gerçek oyun haritası**. Rüzgâr çizgileri, Dr. Geo yerden kalkar, üstünü silkeler, etrafına bakar; "📻 SİNYAL YOK" | Düşüş sesi, cızırtılı telsiz, iklimin rüzgârı | "Neredeyim ben?… Telsiz sinyal alamıyor…" |
+| 4. Maceranın başlangıcı | Kamera kâşiften uzaklaşır (zoom-out), sinema şeritleri açılır; Can/Su/Isı barları, saat, görev, çanta ve **Pad** düğmesi sırayla ekrana kayar | Odaklanma sesi, her parça için bilgi bip'i | "Güneşin konumuna, toprağa ve bitkilere bak…" **[ OYUNA BAŞLAMAK İÇİN TIKLA ]** |
+
+- Tıklama / dokunma / Enter: yazı akıyorsa tamamlar, akmışsa sonraki sahneye geçer. Sahneler kendiliğinden de ilerler; son sahne tıklama bekler.
+- **Geç ⏭** ya da Esc: animasyonu atlayıp doğrudan oyuna geçer.
+- 2. sahnedeki patlamanın beyaz ışığı ekranı kaplarken oyun arka planda kurulur; 3. ve 4. sahne oyunun kendi haritasında,
+  oyuncunun kâşifiyle oynar (`GameScene` → `cineWake`, `cineZoomOut`, `endCinematic`). Animasyon sürerken zaman akmaz.
+- Telefon dikey/yatay ve tablette sahne düzenleri ekrana göre yeniden yerleşir.
+
+**Rapor için (Oynanış → Tema/Hikâye):** Oyun, oyuncuyu doğrudan anlatının içine çekmek ve motivasyonu (eğitsel stresi) artırmak
+amacıyla 4 sahneli bir açılış animasyonu (Intro Cutscene) ile başlar. Bu animasyon, Dr. Geo'nun deneysel bir kaza sonucu
+koordinatlarını kaybetmesini ve hayatta kalabilmek için coğrafi ipuçlarını çözmek zorunda kalışını görselleştirir. Oyuncu
+böylece ders içeriğini bir zorunluluk olarak değil, karakteri kurtarmak için gerekli bir "hayatta kalma aracı" olarak algılar.
+
+### 11. Yardım Sandıkları (📦)
+Sandık açılınca: sandık zıplayıp kapağı açılır, eşyanın renginde parıltılar saçılır, simge sandıktan yükselir ve ekranın
+ortasında büyük bir **ganimet kartı** çıkar (ne çıktı, ne işe yarar, çantada kaç tane var, nasıl kullanılır). Kart kapanırken
+simge çantadaki yuvasına uçar ve yuva zıplar. Art arda açılan sandıklar sıraya girer.
+
+### 12. Rehber
 Başlık ekranından, menüden ve Pad'deki **📖 Rehber** düğmesinden açılır. İçerik veri dosyalarından üretilir:
+- **Hikâye:** 2080, Geo-Core, Geo-Teleporter ve Dr. Geo'nun kazası
 - **Nasıl oynanır:** adımlar, kademe tablosu, puan/yıldız, hayatta kalma, tuşlar
 - **İklimler:** her iklim için nerede, sıcaklık, yağış, bitki örtüsü, toprak, örnek yerler
 - **Yer şekilleri:** ova / plato / dağ karşılaştırması, oluşum, örnekler

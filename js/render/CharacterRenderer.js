@@ -44,7 +44,7 @@
   };
 
   const DEFAULT = {
-    name: 'Kâşif',
+    name: 'Dr. Geo',
     skin: OPTIONS.skin[1],
     hairStyle: 'short',
     hairColor: OPTIONS.hairColor[1],

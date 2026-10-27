@@ -29,6 +29,7 @@
   GS.audio = new GS.AudioEngine();          // ayarlar okunur, çalma ilk tıklamada başlar
   GS.creator = new GS.CharacterCreator(document);
   GS.guide = new GS.Guide(document);
+  GS.cutscene = new GS.IntroCutscene(document);
 
   const intro = document.getElementById('intro');
 
@@ -39,11 +40,15 @@
       `En iyi puanın: <b>${best.toLocaleString('tr-TR')}</b>.<span class="kb-only"> Enter ile başlayabilir, <kbd>M</kbd> ile sesi kapatabilirsin.</span>`;
   }
 
-  /** Phaser oyununu kur */
-  function launch() {
+  /**
+   * Phaser oyununu kur.
+   * @param {boolean} [cinematic] true: açılış animasyonu sürüyor (kamera yakın, kâşif yerde, HUD gizli)
+   */
+  function launch(cinematic = false) {
     intro.classList.add('hidden');
     GS.audio.init();
     if (GS.game) return;
+    GS.cinematicStart = cinematic;
     GS.game = new Phaser.Game({
       type: Phaser.AUTO,              // WebGL varsa onu, yoksa Canvas kullan
       parent: 'game-container',
@@ -62,14 +67,36 @@
     });
   }
 
-  /** "Göreve başla": kâşif yoksa önce oluşturucu */
+  /**
+   * Ana menüye dön (Esc menüsü / oyun sonu). Oyunun tüm durumu temiz bir
+   * şekilde sıfırlansın diye sayfa yeniden yüklenir; en iyi puan, kâşif ve
+   * ses ayarları tarayıcıda saklandığı için kaybolmaz. Tam ekrandaysa
+   * yeniden yükleme tam ekrandan çıkarır, bu yüzden önce çıkılır.
+   */
+  GS.returnToMainMenu = function returnToMainMenu() {
+    const go = () => window.location.reload();
+    if (document.fullscreenElement) document.exitFullscreen().then(go, go);
+    else go();
+  };
+  document.getElementById('btn-home').addEventListener('click', () => GS.returnToMainMenu());
+
+  /** Hikâye girişini oynat; patlama anında oyunu sinematik modda kurar */
+  function playStory() {
+    intro.classList.add('hidden');
+    GS.cutscene.play({
+      hero: GS.creator.current,
+      launchGame: () => launch(true),
+    });
+  }
+
+  /** "Göreve başla": kâşif yoksa önce oluşturucu, sonra açılış animasyonu */
   function start() {
-    if (GS.game || GS.creator.isOpen) return;
+    if (GS.game || GS.creator.isOpen || GS.cutscene.isPlaying) return;
     GS.audio.init(); // ilk tıklamada sesi hazırla
     if (GS.creator.hasSaved) {
-      launch();
+      playStory();
     } else {
-      GS.creator.open({ mode: 'start', onSave: () => launch() });
+      GS.creator.open({ mode: 'start', onSave: () => playStory() });
     }
   }
 
@@ -82,7 +109,7 @@
       document.removeEventListener('keydown', onIntroKey);
       return;
     }
-    if (GS.creator.isOpen || GS.guide.isOpen) return;
+    if (GS.creator.isOpen || GS.guide.isOpen || GS.cutscene.isPlaying) return;
     if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') start();
     if (e.key === 'f' || e.key === 'F') GS.toggleFullscreen();
   });

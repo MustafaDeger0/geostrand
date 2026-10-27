@@ -126,7 +126,10 @@
     //  Efektler
     // ================================================================== //
 
-    /** @param {'interact'|'padOpen'|'correct'|'wrong'|'item'|'death'|'arrive'|'click'} name */
+    /**
+     * @param {string} name 'interact'|'padOpen'|'correct'|'wrong'|'item'|'loot'|'death'|'arrive'|'click'
+     *   açılış animasyonu: 'alarm'|'static'|'charge'|'blast'|'thud'|'radio'|'focus'|'bip'|'type'
+     */
     sfx(name) {
       if (!this.ready) return;
       const t = this.ctx.currentTime + 0.01;
@@ -153,8 +156,52 @@
         case 'item':
           this.tone(out, 'sine', 420, 760, t, 0.14, 0.09);
           break;
+        case 'loot': // sandık: tahta "tak" + parlak, yükselen çan arpeji
+          this.noiseBurst(out, t, 0.08, 'lowpass', 900, 0.12);
+          [79, 83, 86, 91].forEach((m, i) => this.tone(out, 'sine', mtof(m), mtof(m), t + 0.05 + i * 0.06, 0.4, 0.07));
+          this.tone(this.reverb, 'triangle', mtof(91), mtof(91), t + 0.3, 0.9, 0.04);
+          break;
         case 'death':
           [67, 64, 60, 55].forEach((m, i) => this.tone(out, 'triangle', mtof(m), mtof(m), t + i * 0.28, 0.5, 0.08));
+          break;
+        // ---- Açılış animasyonu sesleri ----
+        case 'alarm': // iki tonlu laboratuvar sireni (yumuşatılmış kare dalga)
+          this.tone(out, 'square', 740, 740, t, 0.42, 0.045, 1800, 0.02);
+          this.tone(out, 'square', 587, 587, t + 0.45, 0.42, 0.045, 1800, 0.02);
+          break;
+        case 'static': // telsiz/ekran cızırtısı
+          this.noiseBurst(out, t, 0.32, 'bandpass', 3200, 0.09, 0.8);
+          this.noiseBurst(out, t + 0.12, 0.18, 'highpass', 5000, 0.05);
+          break;
+        case 'charge': // ışınlanma kapsülü dolarken yükselen uğultu (2,8 sn)
+          this.tone(out, 'sawtooth', 110, 880, t, 2.8, 0.035, 2200, 0.6);
+          this.tone(out, 'sine', 220, 1760, t, 2.8, 0.05, null, 0.8);
+          this.tone(this.reverb, 'sine', 440, 3520, t + 1.6, 1.2, 0.025, null, 0.4);
+          break;
+        case 'blast': // kuantum sıçraması: parlak patlama + derin gümbürtü
+          this.noiseBurst(out, t, 1.1, 'lowpass', 2400, 0.3, 0.7);
+          this.noiseBurst(out, t, 0.35, 'highpass', 3000, 0.12);
+          this.tone(out, 'sine', 90, 28, t, 1.2, 0.3, null, 0.005);
+          this.tone(this.reverb, 'triangle', 2400, 180, t, 0.9, 0.06, null, 0.005);
+          break;
+        case 'thud': // yere düşüş
+          this.noiseBurst(out, t, 0.25, 'lowpass', 500, 0.2);
+          this.tone(out, 'sine', 80, 40, t, 0.3, 0.2, null, 0.005);
+          break;
+        case 'radio': // bozuk telsiz: cızırtı kesikleri + sinyal yok bip'i
+          [0, 0.16, 0.3, 0.52].forEach((d, i) => this.noiseBurst(out, t + d, 0.1 + (i % 2) * 0.06, 'bandpass', 1700 + i * 300, 0.08, 2));
+          this.tone(out, 'square', 1250, 1250, t + 0.75, 0.12, 0.025, 2500);
+          this.tone(out, 'square', 940, 940, t + 0.9, 0.18, 0.025, 2500);
+          break;
+        case 'focus': // odaklanma: yumuşak yükselen nefes
+          this.noiseBurst(out, t, 0.8, 'bandpass', 900, 0.05, 0.6);
+          this.tone(out, 'sine', 330, 990, t, 0.7, 0.05, null, 0.2);
+          break;
+        case 'bip': // bilgi bip'i (HUD parçaları gelirken)
+          this.tone(out, 'sine', 1320, 1320, t, 0.09, 0.05);
+          break;
+        case 'type': // altyazı daktilo tıkırtısı (çok kısık)
+          this.noiseBurst(out, t, 0.025, 'highpass', 4500, 0.025);
           break;
         case 'arrive':
           this.tone(out, 'sine', mtof(67), mtof(67), t, 0.4, 0.05);

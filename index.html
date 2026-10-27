@@ -103,7 +103,7 @@
         <kbd>2</kbd><span class="slot-emoji">🔥</span><span class="slot-count" id="inv-heat">1</span>
       </button>
       <div class="rescued" title="Kurtulduğun bölge sayısı">
-        <span>🛩️</span><b id="hud-escaped">0</b><small>kurtuluş</small>
+        <span>🚁</span><b id="hud-escaped">0</b><small>kurtuluş</small>
       </div>
       <div class="rescued score" title="Toplam puan">
         <span>⭐</span><b id="hud-score">0</b><small>puan</small>
@@ -120,6 +120,18 @@
   </div>
 
   <div id="toasts" aria-live="polite"></div>
+
+  <!-- Sandıktan çıkan eşya: ortada büyük kart, sonra simge çantaya uçar -->
+  <div id="loot" class="hidden" role="status" aria-live="polite">
+    <div class="loot-card">
+      <span class="loot-rays" aria-hidden="true"></span>
+      <span class="loot-icon" id="loot-icon">💧</span>
+      <small>📦 Yardım sandığı</small>
+      <b id="loot-name">Su Matarası</b>
+      <span class="loot-effect" id="loot-effect">+50 su</span>
+      <span class="loot-how" id="loot-how"></span>
+    </div>
+  </div>
 
   <!-- ================= COĞRAFYACI PAD'İ (saha defteri) ================= -->
   <div id="pad" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pad-title">
@@ -217,6 +229,7 @@
         <button type="button" class="btn-ghost" id="menu-full">⛶ Tam ekran</button>
         <button type="button" class="btn-ghost danger" id="menu-restart">↺ Baştan başla</button>
       </div>
+      <button type="button" class="btn-ghost danger menu-home" id="menu-home">🏠 Ana menü</button>
     </div>
   </div>
 
@@ -255,10 +268,25 @@
     </div>
   </div>
 
+  <!-- ================= AÇILIŞ ANİMASYONU (IntroCutscene.js) ================= -->
+  <div id="cutscene" class="cutscene hidden" role="dialog" aria-label="Hikâye girişi">
+    <div class="cs-stage" id="cs-stage"></div>
+    <div class="cs-static" id="cs-static" aria-hidden="true"></div>
+    <i class="cs-bar top" aria-hidden="true"></i><i class="cs-bar bottom" aria-hidden="true"></i>
+    <div class="cs-chip" id="cs-chip">1/4</div>
+    <button type="button" class="cs-skip" id="cs-skip">Geç ⏭ <kbd class="kb-only">Esc</kbd></button>
+    <div class="cs-sub" id="cs-sub" aria-live="polite">
+      <span class="cs-speaker hidden" id="cs-speaker"></span>
+      <p class="cs-text" id="cs-text"></p>
+      <span class="cs-next" id="cs-next">▶ <span class="kb-only">Enter / tıkla</span><span class="touch-only">dokun</span></span>
+      <button type="button" class="btn-signal cs-start hidden" id="cs-start">[ OYUNA BAŞLAMAK İÇİN <span class="kb-only">TIKLA</span><span class="touch-only">DOKUN</span> ]</button>
+    </div>
+  </div>
+
   <!-- ================= BÖLGELER ARASI UÇUŞ ================= -->
   <div id="travel" class="hidden" aria-live="polite">
-    <div class="travel-route"><span class="travel-plane">🛩️</span></div>
-    <p>Kurtarma uçağı seni yeni bir bölgeye bırakıyor</p>
+    <div class="travel-route"><span class="travel-plane">🚁</span></div>
+    <p>Helikopter seni aldı… ama Geo-Teleporter yine sıçradı!</p>
   </div>
 
   <!-- ================= BAŞLANGIÇ EKRANI ================= -->
@@ -266,7 +294,7 @@
     <div class="intro-text">
       <h1 class="wordmark">GeoStrand</h1>
       <p class="subtitle">Enlemden Kaçış</p>
-      <p class="lead">Uçağın bilinmeyen bir yere düştü. Çevreni incele, nerede olduğunu bul ve kurtarma ekibine doğru koordinatı gönder.</p>
+      <p class="lead"><b>2080.</b> Bir ışınlanma kazası Dr. Geo'yu dünyanın bilinmeyen bir köşesine fırlattı. Çevreni incele, nerede olduğunu bul ve kurtarma helikopterine doğru koordinatı gönder.</p>
       <ol class="steps">
         <li><b>İncele</b><span>Ağacı, toprağı ve güneş çubuğunun gölgesini incele: <span class="kb-only"><kbd>WASD</kbd> ile yürü, <kbd>E</kbd> ile incele.</span><span class="touch-only">kaydırarak yürü ya da nesneye dokun.</span></span></li>
         <li><b>Tahmin et</b><span>Pad'de yarım küreyi, iklimi ve enlemi seç.</span></li>
@@ -327,7 +355,10 @@
       <h1>Hayatta kalamadın</h1>
       <p id="gameover-stats"></p>
       <p class="fine">Su ve ısı barlarını izle, çantandaki eşyaları zamanında kullan.</p>
-      <button type="button" class="btn-signal" id="btn-restart">Yeniden dene <kbd class="kb-only">R</kbd></button>
+      <div class="gameover-actions">
+        <button type="button" class="btn-signal" id="btn-restart">Yeniden dene <kbd class="kb-only">R</kbd></button>
+        <button type="button" class="btn-ghost" id="btn-home">🏠 Ana menü</button>
+      </div>
     </div>
   </div>
 
@@ -380,6 +411,7 @@
   <script src="js/ui/OffscreenIndicators.js"></script>
   <script src="js/ui/CharacterCreator.js"></script>
   <script src="js/ui/Guide.js"></script>
+  <script src="js/ui/IntroCutscene.js"></script>
 
   <!-- 6) Başlat -->
   <script src="js/main.js"></script>

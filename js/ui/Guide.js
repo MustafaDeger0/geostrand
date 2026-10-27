@@ -6,6 +6,7 @@
  *  yeni bir iklim / yer şekli / kıta eklendiğinde rehber kendiliğinden güncellenir.
  *
  *  Sekmeler:
+ *    📜 Hikâye         : 2080, Geo-Core, Dr. Geo'nun ışınlanma kazası
  *    🎮 Nasıl oynanır  : adımlar, kademeler, puan ve yıldızlar, tuşlar
  *    🌦️ İklimler       : climates.js → guide (konum, sıcaklık, yağış, bitki, toprak, örnek)
  *    ⛰️ Yer şekilleri  : landforms.js → guide
@@ -20,6 +21,7 @@
   'use strict';
 
   const TABS = [
+    { key: 'story', label: '📜 Hikâye' },
     { key: 'play', label: '🎮 Nasıl oynanır' },
     { key: 'climates', label: '🌦️ İklimler' },
     { key: 'landforms', label: '⛰️ Yer şekilleri' },
@@ -80,6 +82,20 @@
     // ------------------------------------------------------------------ //
     //  Sekme içerikleri
     // ------------------------------------------------------------------ //
+    _story() {
+      return `
+        <p class="lead-sm"><b>Yıl 2080.</b> Dünya genelinde ani iklim kaymaları ve olağandışı hava olayları baş göstermiştir.
+          Küresel İklim Örgütü, gezegenin atmosfer dengesini anlık izlemek için <b>Geo-Core</b> adlı bir iklim uydusu ve
+          bu uyduya bağlı <b>Geo-Teleporter</b> kuantum ışınlanma cihazını geliştirir.</p>
+        <p>Projenin baş araştırmacısı <b>Dr. Geo</b>, iklim krizine karşı yerinde veri toplamakla görevlidir. Ancak ilk canlı
+          ışınlanma testi sırasında beklenmedik bir güneş patlaması Geo-Core uydusunu vurur. Sistem aşırı yüklenir,
+          koordinat verileri silinir ve Dr. Geo kendini dünyanın bilinmeyen bir noktasında, zorlu bir iklimin ortasında bulur.</p>
+        <p>Telsiz çekmez, <b>Coğrafyacı Pad'i</b> sinyal bulamaz. Kurtarma helikopterine S.O.S gönderebilmek için çevredeki
+          doğal ipuçlarını okuyup <b>yarım küreyi, iklimi ve enlemi</b> kendisi hesaplamalıdır. Yanlış hesap, helikopterin
+          yanlış yere gitmesi ve Dr. Geo'nun o iklimin dondurucu soğuğunda ya da kavurucu sıcağında mahsur kalması demektir.</p>
+        <p>Her kurtuluşta helikopter Dr. Geo'yu alır… ama bozuk Geo-Teleporter onu yine başka bir yere fırlatır.</p>`;
+    }
+
     _play() {
       const tiers = GS.CONFIG.PROGRESSION.tiers;
       const fieldNames = { hemisphere: 'Yarım küre', climate: 'İklim', latitude: 'Enlem', landform: 'Yer şekli', continent: 'Kıta' };

@@ -159,6 +159,16 @@
         g.fillStyle(0xd94b3c).fillRect(19, 19, 2, 6).fillRect(17, 21, 6, 2); // kırmızı artı
         g.fillStyle(0xf2efe6, 0.9).fillTriangle(6, 10, 20, 2, 34, 10); // paraşüt kumaşı
       });
+
+      // Açılmış sandık: kapak yana devrik, içi boş
+      this._draw('crate_open', 40, 40, (g) => {
+        g.fillStyle(0x000000, 0.22).fillEllipse(21, 35, 34, 8);
+        g.fillStyle(0x5e3f20).fillRect(6, 14, 28, 20);                 // iç (gölgeli)
+        g.fillStyle(0x9a6a3a).fillRect(6, 22, 28, 12);                 // ön yüz
+        g.lineStyle(2, 0x6b4625).strokeRect(6, 14, 28, 20);
+        g.fillStyle(0x9a6a3a).fillRect(26, 4, 12, 10);                 // devrik kapak
+        g.lineStyle(2, 0x6b4625).strokeRect(26, 4, 12, 10);
+      });
     }
 
     // -------------------------------------------------------------- Hava parçacıkları
@@ -166,6 +176,11 @@
       this._draw('p_rain', 4, 18, (g) => g.fillStyle(0xd6e8f8, 1).fillRect(1, 0, 2.2, 18));
       this._draw('p_snow', 6, 6, (g) => g.fillStyle(0xffffff, 1).fillCircle(3, 3, 2.6));
       this._draw('p_dust', 14, 3, (g) => g.fillStyle(0xe2c08a, 0.9).fillRect(0, 0, 14, 2));
+      // Sandık açılınca saçılan parıltı (dört köşeli yıldız)
+      this._draw('p_spark', 12, 12, (g) => {
+        g.fillStyle(0xffffff, 1).fillTriangle(6, 0, 7.5, 6, 4.5, 6).fillTriangle(6, 12, 7.5, 6, 4.5, 6)
+          .fillTriangle(0, 6, 6, 4.5, 6, 7.5).fillTriangle(12, 6, 6, 4.5, 6, 7.5);
+      });
     }
 
     // -------------------------------------------------------------- Süsler

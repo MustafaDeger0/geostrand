@@ -8,7 +8,8 @@
  *      (değerler tarayıcıda hatırlanır)
  *    • Rehber (nasıl oynanır, iklimler, yer şekilleri, kıtalar, hava olayları)
  *    • Kâşifi düzenle (karakter oluşturucu)
- *    • Tam ekran · Baştan başla (yanlışlıkla basılmasın diye iki kez onay ister)
+ *    • Tam ekran · Baştan başla · 🏠 Ana menü
+ *      (ilerleme kaybolacağı için son ikisi iki kez onay ister)
  *
  *  Oyun kuralı içermez: seçimler EventBus olayı olarak yayılır.
  * ============================================================================
@@ -32,6 +33,7 @@
         guide: $('menu-guide'),
         hero: $('menu-hero'),
         restart: $('menu-restart'),
+        home: $('menu-home'),
         sliders: [...doc.querySelectorAll('#menu .slider input')],
       };
 
@@ -46,7 +48,11 @@
       on(this.el.full, 'click', () => bus.emit(E.UI_FULLSCREEN));
       on(this.el.guide, 'click', () => bus.emit(E.UI_GUIDE, 'play'));
       on(this.el.hero, 'click', () => bus.emit(E.UI_EDIT_HERO));
-      on(this.el.restart, 'click', () => this._confirmRestart());
+      on(this.el.restart, 'click', () => this._confirm(this.el.restart, () => {
+        this.close();
+        this.bus.emit(GS.EVENTS.RESTART);
+      }));
+      on(this.el.home, 'click', () => this._confirm(this.el.home, () => GS.returnToMainMenu()));
       on(this.el.root, 'mousedown', (e) => {
         if (e.target === this.el.root) this.close();
       });
@@ -73,7 +79,7 @@
     open() {
       if (this.isOpen) return;
       this.isOpen = true;
-      this._resetRestart();
+      this._resetConfirms();
       this.el.root.classList.remove('hidden');
       this.el.resume.focus();
       this.bus.emit(GS.EVENTS.MENU_OPENED);
@@ -99,23 +105,25 @@
       input.nextElementSibling.textContent = input.value;
     }
 
-    /** İlk tıklamada onay ister, ikincisinde baştan başlatır */
-    _confirmRestart() {
-      const btn = this.el.restart;
+    /** İlk tıklamada onay ister ("Emin misin?"), ikincisinde işi yapar */
+    _confirm(btn, action) {
       if (btn.classList.contains('confirm')) {
-        this.close();
-        this.bus.emit(GS.EVENTS.RESTART);
+        this._resetConfirms();
+        action();
         return;
       }
+      this._resetConfirms();
       btn.classList.add('confirm');
       btn.textContent = 'Emin misin? Tekrar bas';
-      this._restartTimer = setTimeout(() => this._resetRestart(), 3000);
+      this._confirmTimer = setTimeout(() => this._resetConfirms(), 3000);
     }
 
-    _resetRestart() {
-      clearTimeout(this._restartTimer);
-      this.el.restart.classList.remove('confirm');
-      this.el.restart.textContent = '↺ Baştan başla';
+    _resetConfirms() {
+      clearTimeout(this._confirmTimer);
+      [[this.el.restart, '↺ Baştan başla'], [this.el.home, '🏠 Ana menü']].forEach(([btn, label]) => {
+        btn.classList.remove('confirm');
+        btn.textContent = label;
+      });
     }
   }
 

@@ -241,6 +241,63 @@
       }
     }
 
+    /**
+     * Sandık ganimeti: ortada büyük kart (ne çıktı, ne işe yarar, nasıl kullanılır),
+     * 1,9 sn sonra simge çantadaki yuvasına uçar ve yuva zıplar.
+     * Art arda açılırsa sıraya girer.
+     */
+    showLoot(loot) {
+      this._lootQueue = this._lootQueue || [];
+      this._lootQueue.push(loot);
+      if (!this._lootBusy) this._nextLoot();
+    }
+
+    _nextLoot() {
+      const loot = this._lootQueue.shift();
+      if (!loot) {
+        this._lootBusy = false;
+        return;
+      }
+      this._lootBusy = true;
+      const $ = (id) => this.doc.getElementById(id);
+      const root = $('loot');
+      $('loot-icon').textContent = loot.icon;
+      $('loot-name').textContent = loot.label;
+      $('loot-effect').textContent = `${loot.effect} · çantada ${loot.count} adet`;
+      $('loot-how').innerHTML = GS.Device.say(`Kullanmak için <kbd>${loot.key}</kbd>`, `Kullanmak için ${loot.icon} yuvasına dokun`);
+      root.className = `loot-${loot.type}`;
+      void root.offsetWidth; // animasyonu yeniden başlat
+
+      const slot = loot.type === 'water' ? this.el.waterBtn : this.el.heatBtn;
+      this._lootTimers = [
+        setTimeout(() => {
+          // Simge ortadan çantadaki yuvaya uçar
+          const from = $('loot-icon').getBoundingClientRect();
+          const to = slot.getBoundingClientRect();
+          const fly = this.doc.createElement('div');
+          fly.className = 'loot-fly';
+          fly.textContent = loot.icon;
+          fly.style.left = `${from.left + from.width / 2}px`;
+          fly.style.top = `${from.top + from.height / 2}px`;
+          this.doc.body.appendChild(fly);
+          root.classList.add('leave');
+          requestAnimationFrame(() => {
+            fly.style.transform = `translate(${to.left + to.width / 2 - (from.left + from.width / 2)}px, ${to.top + to.height / 2 - (from.top + from.height / 2)}px) scale(0.45)`;
+          });
+          this._lootTimers.push(setTimeout(() => {
+            fly.remove();
+            slot.classList.remove('bump');
+            void slot.offsetWidth;
+            slot.classList.add('bump');
+          }, 650));
+        }, 1900),
+        setTimeout(() => {
+          root.className = 'hidden';
+          this._nextLoot();
+        }, 2700),
+      ];
+    }
+
     /** Telefonda büyük "İncele" düğmesi: yakında nesne varken görünür */
     setInteractTarget(obj) {
       this.el.interactBtn.classList.toggle('show', !!obj);
@@ -338,6 +395,11 @@
       clearTimeout(this._unlockTimer);
       clearTimeout(this._unlockTimer2);
       this.el.toasts.innerHTML = '';
+      (this._lootTimers || []).forEach(clearTimeout);
+      this._lootQueue = [];
+      this._lootBusy = false;
+      this.doc.getElementById('loot').className = 'hidden';
+      this.doc.querySelectorAll('.loot-fly').forEach((n) => n.remove());
       this.el.root.classList.remove('penalized');
       ['--cold', '--dry', '--hurt'].forEach((v) => this.doc.body.style.setProperty(v, 0));
       this.el.vignette.classList.remove('beat');

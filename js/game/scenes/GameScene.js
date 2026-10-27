@@ -22,6 +22,8 @@
  *    normal oyun : 1×
  *    Pad açık    : 0,25× (okuma/düşünme süresi; gerilim sürer)
  *    Menü / Rehber / karakter oluşturucu / uçuş : 0× (tam duraklama)
+ *    Açılış animasyonu (cinematic)              : 0× — IntroCutscene kamerayı
+ *                                                 yönetir, bitince oyun başlar
  * ============================================================================
  */
 (function (GS) {
@@ -60,6 +62,15 @@
       this.player = new GS.Player(this, this.spawn.x, this.spawn.y, C.PLAYER, this.hero);
       this.cameras.main.setBounds(0, 0, C.WORLD.width, C.WORLD.height);
       this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+      // Açılış animasyonu: oyun ilk kez kurulurken kamera kâşife çok yakın başlar,
+      // kâşif yerde yatar; IntroCutscene sırayla cineWake/cineZoomOut/endCinematic çağırır.
+      this.cinematic = !!GS.cinematicStart;
+      GS.cinematicStart = false;
+      this._zoomMul = this.cinematic ? 2.6 : 1;
+      if (this.cinematic) {
+        document.body.classList.add('cine');
+        this.player.setAngle(-90);
+      }
       this._applyZoom();
       this._onResize = () => this._applyZoom();
       this.scale.on('resize', this._onResize);
@@ -232,7 +243,7 @@
 
     /** Zaman tamamen durur mu? (menü, rehber, karakter oluşturucu, uçuş) */
     _isHalted() {
-      return this.menu.isOpen || this.traveling || GS.guide.isOpen || GS.creator.isOpen;
+      return this.cinematic || this.menu.isOpen || this.traveling || GS.guide.isOpen || GS.creator.isOpen;
     }
 
     /** Oyuncu hareket edemez mi? (duraklama ya da Pad açık) */
@@ -334,7 +345,7 @@
 
     /** Çantadan eşya kullan (1: Su Matarası, 2: Isı Paketi) */
     _useItem(type) {
-      if (this.survival.isDead || this.menu.isOpen) return;
+      if (this.cinematic || this.survival.isDead || this.menu.isOpen) return;
       const item = this.cfg.INVENTORY.items[type];
 
       if (!this.inventory.has(type)) {
@@ -351,16 +362,51 @@
       this.audio.sfx('item');
     }
 
-    /** Yardım sandığı: hangi bar daha düşükse ona yarayan eşya çıkar */
+    /**
+     * Yardım sandığı: hangi bar daha düşükse ona yarayan eşya çıkar.
+     * Görünür olsun diye: sandık zıplayıp açılır, parıltılar saçılır, eşyanın
+     * simgesi sandıktan yükselir ve ekranın ortasında büyük bir "ganimet"
+     * kartı çıkar; kart kapanırken simge çantadaki yuvasına uçar.
+     */
     _openCrate(crate) {
       if (crate.inspected) return;
       crate.markInspected();
-      crate.setAlpha(0.55);
       const type = this.survival.hydration <= this.survival.bodyTemp ? 'water' : 'heat';
       this.inventory.add(type);
       const item = this.cfg.INVENTORY.items[type];
-      this.hud.toast(`📦 Sandıktan ${item.icon} ${item.label} çıktı!`, 'success');
-      this.audio.sfx('item');
+
+      // 1) Sandık: zıpla, kapak açılsın
+      this.tweens.add({
+        targets: crate, scaleX: 1.25, scaleY: 0.8, duration: 90, yoyo: true,
+        onComplete: () => crate.setTexture('crate_open'),
+      });
+      // 2) Parıltı patlaması (eşyanın rengiyle)
+      const color = type === 'water' ? [0x8fd8ff, 0xffffff, 0x4fb0d6] : [0xffb15c, 0xffffff, 0xff7a2f];
+      const burst = this.add.particles(crate.x, crate.y - 10, 'p_spark', {
+        speed: { min: 90, max: 220 }, angle: { min: 200, max: 340 }, gravityY: 260,
+        lifespan: 900, scale: { start: 1.3, end: 0 }, rotate: { min: 0, max: 360 },
+        tint: color, quantity: 26, emitting: false,
+      }).setDepth(4600);
+      burst.explode(26);
+      this.time.delayedCall(1200, () => burst.destroy());
+      // 3) Simge sandıktan yükselir
+      const icon = this.add.text(crate.x, crate.y - 20, `${item.icon}+1`, {
+        fontFamily: 'Atkinson Hyperlegible, Segoe UI, Arial, sans-serif', fontSize: '22px', fontStyle: 'bold',
+        color: '#ffffff', stroke: '#0f2a2e', strokeThickness: 5,
+      }).setOrigin(0.5).setDepth(4700);
+      this.tweens.add({ targets: icon, y: crate.y - 78, alpha: { from: 1, to: 0 }, duration: 1400, ease: 'Cubic.Out', onComplete: () => icon.destroy() });
+      this.cameras.main.shake(120, 0.003);
+
+      // 4) Ekranın ortasında ganimet kartı → simge çantaya uçar
+      this.hud.showLoot({
+        type,
+        icon: item.icon,
+        label: item.label,
+        effect: type === 'water' ? `+${this.cfg.REWARD.bonusAmount} su` : `+${this.cfg.REWARD.bonusAmount} vücut ısısı`,
+        key: type === 'water' ? '1' : '2',
+        count: this.inventory.getCounts()[type],
+      });
+      this.audio.sfx('loot');
     }
 
     // ================================================================== //
@@ -456,16 +502,67 @@
       const c = this.cfg.CAMERA;
       const byArea = Math.sqrt((width * height) / (c.viewWidth * c.viewHeight));
       const zoom = Phaser.Math.Clamp(byArea, c.minZoom, c.maxZoom);
-      this.cameras.main.setZoom(zoom);
+      this.cameras.main.setZoom(zoom * (this._zoomMul || 1));
+    }
+
+    // ================================================================== //
+    //  AÇILIŞ ANİMASYONU (IntroCutscene yönetir)
+    // ================================================================== //
+
+    /** Sahne 3: Dr. Geo yerde gözlerini açar, kalkar, üstünü silkeler */
+    cineWake() {
+      const p = this.player;
+      this.tweens.add({
+        targets: p, angle: 0, duration: 650, ease: 'Back.Out', delay: 200,
+        onComplete: () => {
+          // Üstünü silkele: sağa sola hızlı kıpırdama + toz
+          this.tweens.add({ targets: p, x: p.x + 3, duration: 60, yoyo: true, repeat: 5 });
+          const dust = this.add.particles(p.x, p.y - 14, 'p_dust', {
+            speed: { min: 20, max: 60 }, angle: { min: 180, max: 360 }, lifespan: 700,
+            alpha: { start: 0.8, end: 0 }, scale: { start: 0.8, end: 0.2 }, quantity: 10, emitting: false,
+          }).setDepth(p.depth + 1);
+          dust.explode(14);
+          this.time.delayedCall(900, () => dust.destroy());
+          // Sağa sola bak: neredeyim?
+          ['left', 'right', 'down'].forEach((dir, i) => this.time.delayedCall(700 + i * 520, () => {
+            p.facing = dir;
+            p.setFrame(`${dir}-0`);
+          }));
+        },
+      });
+    }
+
+    /** Sahne 4: kamera kâşiften uzaklaşır, çevre görünür */
+    cineZoomOut(duration = 2400) {
+      this.tweens.addCounter({
+        from: this._zoomMul, to: 1, duration, ease: 'Cubic.InOut',
+        onUpdate: (tw) => {
+          this._zoomMul = tw.getValue();
+          this._applyZoom();
+        },
+      });
+    }
+
+    /** Animasyon bitti ya da geçildi: oyun başlar */
+    endCinematic() {
+      if (!this.cinematic) return;
+      this.cinematic = false;
+      this.tweens.killTweensOf(this.player);
+      this.player.setAngle(0);
+      this._zoomMul = 1;
+      this._applyZoom();
+      document.body.classList.remove('cine', 'cine-hud');
+      this._setGameKeyboard(true);
+      this.audio.sfx('arrive');
     }
 
     _openPad() {
-      if (this.survival.isDead || this.menu.isOpen || this.traveling) return;
+      if (this.cinematic || this.survival.isDead || this.menu.isOpen || this.traveling) return;
       this.pad.open(null);
     }
 
     _openMenu() {
-      if (this.survival.isDead || this.pad.isOpen || this.traveling) return;
+      if (this.cinematic || this.survival.isDead || this.pad.isOpen || this.traveling) return;
       this.menu.open();
     }
 
@@ -533,6 +630,7 @@
       this.input.keyboard.enabled = true;
       this.input.keyboard.enableGlobalCapture();
       this.world = null;
+      document.body.classList.remove('cine', 'cine-hud');
     }
   }
 

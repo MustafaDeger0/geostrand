@@ -147,7 +147,7 @@
         this.appearance[field] = e.target.value;
       });
       this.el.name.addEventListener('input', () => {
-        this.appearance.name = this.el.name.value.trim().slice(0, 14) || 'Kâşif';
+        this.appearance.name = this.el.name.value.trim().slice(0, 14) || 'Dr. Geo';
       });
       this.el.random.addEventListener('click', () => {
         this.appearance = { ...GS.CharacterRenderer.randomAppearance(), name: this.appearance.name };
