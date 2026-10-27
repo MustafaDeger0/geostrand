@@ -214,7 +214,7 @@
      */
     setObjective(state) {
       this._objective = state;
-      const { clueIds, found, solved, fields } = state;
+      const { clueIds, found, solved, fields, solvedTitle, solvedHint } = state;
       const say = (k, t) => GS.Device.say(k, t);
       const T = GS.ClueFactory.TYPES;
       const total = clueIds.length;
@@ -226,8 +226,8 @@
 
       const NAMES = { hemisphere: 'yarım küre', climate: 'iklim', latitude: 'enlem', landform: 'yer şekli', continent: 'kıta' };
       if (solved) {
-        this.el.objTitle.textContent = 'Kurtarma hazır';
-        this.el.objHint.innerHTML = 'Pad\'de <b>Sonraki bölgeye uç</b> düğmesine bas';
+        this.el.objTitle.textContent = solvedTitle || 'Kurtarma hazır';
+        this.el.objHint.innerHTML = solvedHint || 'Pad\'de <b>Sonraki bölgeye uç</b> düğmesine bas';
       } else if (all) {
         this.el.objTitle.textContent = 'Koordinatı gönder';
         const list = fields.map((f) => NAMES[f]);

@@ -335,3 +335,22 @@ test('WeatherPicker: olasılık 0 ise hep açık, 1 ise iklime uygun olay', () =
   }
   for (const k of Object.keys(CLIMATES)) assert.ok(CLIMATE_WEATHER[k], `${k} hava listesi`);
 });
+
+// ======================================================================
+//  Çevrim içi: tohumlu rastgele (aynı tohum = aynı harita)
+// ======================================================================
+const { SeededRandom } = require('../js/core/SeededRandom.js');
+
+test('SeededRandom: aynı tohum aynı diziyi verir, Math.random geri yüklenir', () => {
+  const original = Math.random;
+  const a = SeededRandom.run(12345, () => Array.from({ length: 5 }, () => Math.random()));
+  const b = SeededRandom.run(12345, () => Array.from({ length: 5 }, () => Math.random()));
+  const c = SeededRandom.run(54321, () => Array.from({ length: 5 }, () => Math.random()));
+  assert.deepEqual(a, b);
+  assert.notDeepEqual(a, c);
+  assert.ok(a.every((x) => x >= 0 && x < 1));
+  assert.equal(Math.random, original);
+  // Hata olsa bile geri yüklenir
+  assert.throws(() => SeededRandom.run(1, () => { throw new Error('x'); }));
+  assert.equal(Math.random, original);
+});

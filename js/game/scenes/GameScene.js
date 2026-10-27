@@ -32,8 +32,9 @@
   const BEST_KEY = 'geostrand-best';
 
   class GameScene extends Phaser.Scene {
-    constructor() {
-      super('GameScene');
+    /** @param {string} [key] Çevrim içi yarış (RaceScene) bu sınıftan türer ve kendi anahtarını verir */
+    constructor(key = 'GameScene') {
+      super(key);
     }
 
     // ================================================================== //
@@ -109,6 +110,11 @@
 
       this.elapsed = 0;
       this.traveling = false;
+      this._begin();
+    }
+
+    /** Oyunu başlat. Tek oyunculu: ilk bölgeyi yükle. (RaceScene: sunucudan gelen turu bekler) */
+    _begin() {
       this._loadNextLocation();
     }
 
@@ -449,9 +455,10 @@
      * @param {object} location
      * @param {object} tier   kademe (index dahil)
      * @param {object} weather GS.WEATHERS öğesi
-     * @param {{crates:number, label:string, levelNumber:number}} opts
+     * @param {{crates:number, label:string, levelNumber:number, seed?:number}} opts
+     *   seed verilirse harita bu tohumla kurulur → aynı tohum = aynı harita (çevrim içi yarış)
      */
-    _buildLocation(location, tier, weather, { crates, label, levelNumber }) {
+    _buildLocation(location, tier, weather, { crates, label, levelNumber, seed }) {
       if (this.world) {
         this.worldCollider.destroy();
         this.world.destroy();
@@ -463,7 +470,15 @@
 
       this.player.setPosition(this.spawn.x, this.spawn.y);
       this.player.body.reset(this.spawn.x, this.spawn.y);
-      this.world = this.worldBuilder.build(location, clues, this.spawn, { crates });
+      const build = () => this.worldBuilder.build(location, clues, this.spawn, { crates });
+      if (seed === undefined) {
+        this.world = build();
+      } else {
+        // Zemin dokusu ilk kez üretilirken rastgele sayı tüketir; tohumlu bölümden ÖNCE hazırlanır,
+        // yoksa dokusu hazır olan ile olmayan oyuncunun haritası farklılaşırdı
+        this.worldBuilder.prepare(location);
+        this.world = GS.SeededRandom.run(seed, build);
+      }
       this.worldCollider = this.physics.add.collider(this.player, this.world.obstacles);
       this.interaction.setTargets([...this.world.interactables, ...this.world.crates]);
       this.levelSolved = false;

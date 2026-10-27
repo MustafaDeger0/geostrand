@@ -98,11 +98,19 @@
       this._listeners = [];
       this.isOpen = false;
       this.el.root.classList.add('hidden');
+      this.restartLabel = null;
+      this._resetConfirms();
     }
 
     // ------------------------------------------------------------------ //
     _showValue(input) {
       input.nextElementSibling.textContent = input.value;
+    }
+
+    /** Çevrim içi yarışta "Baştan başla" yerine "Yarıştan ayrıl" */
+    setRestartLabel(text) {
+      this.restartLabel = text;
+      this.el.restart.textContent = text;
     }
 
     /** İlk tıklamada onay ister ("Emin misin?"), ikincisinde işi yapar */
@@ -115,12 +123,12 @@
       this._resetConfirms();
       btn.classList.add('confirm');
       btn.textContent = 'Emin misin? Tekrar bas';
-      this._confirmTimer = setTimeout(() => this._resetConfirms(), 3000);
+      this._confirmTimer = setTimeout(() => this._resetConfirms(), 5000);
     }
 
     _resetConfirms() {
       clearTimeout(this._confirmTimer);
-      [[this.el.restart, '↺ Baştan başla'], [this.el.home, '🏠 Ana menü']].forEach(([btn, label]) => {
+      [[this.el.restart, this.restartLabel || '↺ Baştan başla'], [this.el.home, '🏠 Ana menü']].forEach(([btn, label]) => {
         btn.classList.remove('confirm');
         btn.textContent = label;
       });

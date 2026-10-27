@@ -28,7 +28,7 @@
       this._makeParticles();
       this._makeDecor();
       this._makeLight();
-      this.scene.start('GameScene');
+      this.scene.start(GS.startScene || 'GameScene'); // tek oyunculu ya da çevrim içi yarış (main.js)
     }
 
     /** Yardımcı: geçici bir Graphics ile çiz, dokuya çevir, temizle */

@@ -12,7 +12,8 @@ Oyuncu haritadaki **ağacı**, **toprağı** ve **güneş çubuğunu** inceleyer
 Bölge 5'ten itibaren **kıta** sorusu eklenir. Doğru tahmin kurtarma getirir, yanlış tahmin hayatta kalmayı zorlaştırır.
 
 **İçerik:** 19 gerçek konum · 6 kıta · 6 iklim · 3 yer şekli · 5 hava olayı · kişiselleştirilebilir kâşif · rehber ·
-**bilgisayar, tablet ve telefonda** oynanır (dokunmatik kontroller).
+**bilgisayar, tablet ve telefonda** oynanır (dokunmatik kontroller) · **🌍 çevrim içi yarış**: dünyanın her yerinden
+oyuncularla "kim daha hızlı bilecek?" (hızlı eşleşme ya da oda koduyla).
 
 ---
 
@@ -26,6 +27,68 @@ Bölge 5'ten itibaren **kıta** sorusu eklenir. Doğru tahmin kurtarma getirir, 
 > Phaser internetten (CDN) yüklenir. **İnternetsiz** sınıf ortamı için:
 > `https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js` dosyasını indirip `lib/` klasörüne koyun ve
 > `index.html` içindeki `<script src="...phaser.min.js">` satırını `lib/phaser.min.js` olarak değiştirin.
+
+## 🌍 Çevrim İçi Yarış
+
+Başlık ekranında **🌍 Çevrim içi yarış** → üç yol:
+
+| | Nasıl |
+|---|---|
+| ⚡ **Hızlı eşleşme** | "Rakip bul" → dünyanın her yerinden rastgele kâşiflerle aynı odaya düşersin. 2. kişi gelince **20 sn** sonra yarış kendiliğinden başlar (8 kişi olursa hemen). 25 sn kimse gelmezse **Yalnız başla** diyebilirsin. 5 tur, 2 dk, kademeli zorluk |
+| 🏠 **Oda kur** | 4 harfli kod (ör. `KPZT`) ve paylaşılacak bağlantı alırsın (`…/?oda=KPZT` açılınca kod kendiliğinden yazılır; telefonda "Kopyala" paylaşma menüsünü açar). Tur sayısı (3/5/8/10), süre (1:30 / 2:30 / 4:00) ve zorluk (kademeli, kolay, orta, zor) senin elinde; en fazla 20 kişi |
+| 🔑 **Odaya katıl** | Arkadaşının kodunu yaz |
+
+**Yarış kuralları**
+
+| | |
+|---|---|
+| Aynı harita | Sunucu her tur bir konum ve bir **tohum** (seed) sayısı gönderir; harita bu tohumla kurulur → dünyadaki bütün yarışçılarda birebir aynı |
+| Başlangıç | 3-2-1 geri sayım; o zamana kadar kimse yürüyemez |
+| Puan | 1. bilen 100, 2. 80, 3. 65, 4. 55, 5. 50, sonrakiler 40 · her yanlış −10 (bilene en az 20) · bilemeyen 0 |
+| Yanlış tahmin | Telsiz **8 saniye** kilitlenir (rastgele denemeye karşı); yanlış sorular Pad'de işaretlenir |
+| Tur sonu | Herkes bilince ya da süre dolunca. Gerçek konum açıklanır, tur sıralaması gösterilir |
+| Rakipler | Haritada kendi kâşif görünümleriyle yürür; sağda canlı sıralama (🔍 kaç ipucu buldu, 🥇 kim bildi). Telefonda sıralamaya dokununca tamamı açılır |
+| Bağlantı koparsa | Kendiliğinden yeniden bağlanır, puan korunur (sayfa yenilense bile aynı sekmede geri dönülür) |
+| Oyun sonu | Kürsü (ilk üç) + tam sıralama. Özel odada kurucu "Yeniden yarış", hızlı eşleşmede "Yeni rakip ara" |
+
+Yarışta hayatta kalma barları, sandıklar ve gece yoktur (hıza odaklı). Esc menüsündeki **🚪 Yarıştan ayrıl** ya da
+**🏠 Ana menü** odadan çıkarır.
+
+**Adil oyun ve güvenlik (internete açık olduğu için):** Cevabı, süreyi ve puanı **sunucu** hesaplar; tarayıcının saati ya da
+gönderdiği "bildim" mesajı önemsizdir. Yanlış tahminde sunucu doğru cevabı söylemez. Mesajlar boyut, tür ve hız olarak
+denetlenir (sel/spam koruması), oyuncu adları temizlenir ve sayfaya HTML olarak değil metin olarak yazılır, sunucu yalnızca
+oyun dosyalarını sunar (sunucu kodu ve ayar dosyaları kapalıdır). Not: Haritayı çizebilmek için konum bilgisi tarayıcıya da
+gönderilir; tarayıcının geliştirici araçlarını bilen biri cevabı görebilir. Sınıf/arkadaş yarışı için bu kabul edilebilir bir
+sınırdır; puanı yine de sunucu verir.
+
+## 🚀 Çevrim İçi Yayın (Render.com, ücretsiz)
+
+Oyunun internetteki adresi hem oyunu hem çevrim içi sunucuyu taşır; herkes yalnızca bu adresi açar.
+
+**1. Kodu GitHub'a koy** (bir kez)
+1. [github.com](https://github.com) → ücretsiz hesap → sağ üstte **+ → New repository** → ad: `geostrand` → **Create repository**.
+2. Açılan sayfada **uploading an existing file** bağlantısına tıkla.
+3. Zip'ten çıkan `geostrand` klasörünün **içindekileri** (index.html, package.json, render.yaml, css/, js/, server/, tests/…)
+   sürükleyip bırak → **Commit changes**. (`node_modules` klasörü varsa yükleme; Render kendisi kurar.)
+
+**2. Render'da yayınla** (bir kez)
+1. [render.com](https://render.com) → **Get Started** → GitHub hesabınla giriş yap.
+2. **New + → Blueprint** → `geostrand` deposunu seç → **Apply**. (`render.yaml` her ayarı hazır getirir.)
+   *Elle kurmak istersen:* **New + → Web Service** → depo → Runtime **Node**, Build Command `npm install --omit=dev`,
+   Start Command `npm start`, Instance Type **Free** → **Create Web Service**.
+3. 2-3 dakika sonra adresin hazır: `https://geostrand-xxxx.onrender.com`. Bu adresi herkesle paylaş.
+
+**Bilmen gerekenler**
+- **Ücretsiz sunucu uyur:** 15 dakika kimse oynamazsa uykuya geçer; sonraki ilk açılış **30-60 sn** sürer (lobi
+  "Sunucu uyanıyor…" yazar). Ders/sunum öncesinde adresi bir kez açıp uyandırman yeterli.
+- **Güncelleme:** GitHub'daki dosyaları değiştirince Render kendiliğinden yeniden yayınlar.
+- **Sunucu tek bölgede** çalışır (Render'da kurarken seçilir; Türkiye için **Frankfurt** önerilir). Başka kıtadan
+  oynayanlar biraz daha gecikme yaşar ama sırayı ve süreyi sunucu ölçtüğü için yarış adil kalır.
+- **Kendi bilgisayarında denemek:** Node.js 18+ kur → klasörde `npm install` → `npm start` → `http://localhost:3000`
+  (aynı Wi-Fi'daki cihazlar ekranda yazan `http://192.168.x.x:3000` adresini açar).
+- **Oyunu başka yerde (ör. GitHub Pages) yayınlarsan:** `js/core/Config.js` → `NET.serverUrl` alanına Render adresini yaz
+  ya da oyunu `…/index.html?sunucu=https://geostrand-xxxx.onrender.com` ile aç.
+- `index.html` dosyasını çift tıklayarak açınca yalnızca tek oyunculu mod çalışır (çevrim içi için sunucu gerekir).
 
 ## Telefon ve Tablet
 
@@ -66,6 +129,8 @@ Sağ alttaki eylem çubuğu (Pad, ses, tam ekran, menü) fareyle de kullanılır
 
 Kod iki katmana ayrılmıştır. **Mantık katmanı Phaser'ı hiç tanımaz**; bu yüzden oyun kuralları
 tarayıcı açmadan Node.js ile test edilebilir ve başka bir motora (Unity, Godot) taşınabilir.
+Çevrim içi sunucu da **aynı mantık dosyalarını** (konumlar, değerlendirici, kademeler) kullanır: oyunun ve sunucunun
+"doğru cevap" kararı hiçbir zaman farklılaşmaz.
 
 ```
 geostrand/
@@ -74,6 +139,7 @@ geostrand/
 ├── js/
 │   ├── core/
 │   │   ├── Device.js           Dokunmatik mi klavye mi? (metinler ve düğmeler buna göre)
+│   │   ├── SeededRandom.js     Tohumlu rastgele sayı: aynı tohum = aynı harita (çevrim içi)
 │   │   ├── EventBus.js         Modüller arası olay sistemi + olay adları (EVENTS)
 │   │   └── Config.js           TÜM denge sayıları (hızlar, bonus, ceza, gün uzunluğu)
 │   ├── data/
@@ -97,6 +163,8 @@ geostrand/
 │   │   ├── entities/Interactable.js  Ağaç / toprak / güneş çubuğu
 │   │   ├── systems/InteractionSystem.js  En yakın nesne + E tuşu / İncele düğmesi
 │   │   ├── systems/TouchControls.js  Dokunmatik: kaydır (joystick) ya da dokunduğun yere yürü
+│   │   ├── systems/Ghosts.js         Çevrim içi rakiplerin kâşifleri (yumuşak hareket, ad, madalya)
+│   │   ├── scenes/RaceScene.js       Çevrim içi yarış (GameScene'den türer)
 │   │   ├── systems/TerrainPainter.js Zemin dokusu, dağ, göl, nehir, köprü, kum tepesi çizer
 │   │   ├── systems/WorldBuilder.js   Konumdan harita kurar / yıkar (yerleşim + çarpışma)
 │   │   ├── systems/LightingOverlay.js Gece karartması + fener ışığı
@@ -114,8 +182,18 @@ geostrand/
 │   │   ├── OffscreenIndicators.js  Ekran dışındaki ipuçlarını gösteren kenar okları
 │   │   ├── CharacterCreator.js "Kâşifini hazırla" ekranı (canlı önizlemeli)
 │   │   ├── IntroCutscene.js    4 sahnelik hikâye girişi (altyazı, ses, geç düğmesi)
+│   │   ├── Lobby.js            Çevrim içi: hızlı eşleşme, oda kur / katıl, oyuncular, ayarlar
+│   │   ├── RaceHUD.js          Süre, canlı sıralama, geri sayım, tur sonucu, kürsü
 │   │   └── Guide.js            Rehber: nasıl oynanır, iklimler, yer şekilleri, kıtalar, hava
-│   └── main.js                 Tam ekran oyunu başlatır
+│   ├── net/
+│   │   └── NetClient.js        Sunucuyla konuşma (Socket.IO), otomatik yeniden bağlanma
+│   └── main.js                 Oyunu başlatır (tek oyunculu ya da çevrim içi yarış)
+├── server/                     ◀ ÇEVRİM İÇİ SUNUCU (Node.js + Socket.IO)
+│   ├── server.js               Oyun dosyalarını sunar + odalar, hızlı eşleşme, hız sınırı
+│   ├── RaceRoom.js             Yarış kuralları: turlar, sunucu tarafı cevap/süre/puan
+│   └── test/                   Oda kuralları + gerçek ağ üzerinden botlarla uçtan uca test
+├── package.json                npm start (sunucu) · npm test (tüm testler)
+├── render.yaml                 Render.com tek tık kurulum ayarı
 └── tests/logic.test.js         30 birim testi →  node --test tests/logic.test.js
 ```
 
@@ -398,8 +476,14 @@ Aynı iklimin farklı yarım küre ve kıtalarda görülmesi bilinçlidir: öğr
 ## Testler
 
 ```bash
-node --test tests/logic.test.js
+npm install     # bir kez (sunucu testleri için)
+npm test        # tüm testler
 ```
-Hayatta kalma formülü (2× ceza dahil), +50 bonusun 100'de sınırlanması, ölüm olayı, gece/gündüz ışığı,
+**Oyun mantığı** (`tests/logic.test.js`): hayatta kalma formülü (2× ceza dahil), +50 bonusun 100'de sınırlanması, ölüm olayı, gece/gündüz ışığı,
 tahmin değerlendirme (yer şekli ve kıta dahil), kademeler, puan/yıldız, hava seçimi, aynı iklimin arka arkaya gelmemesi,
-gölge hesabı ve coğrafi veri tutarlılığı test edilir (30 test).
+gölge hesabı, coğrafi veri tutarlılığı ve tohumlu rastgele sayı (aynı tohum = aynı harita).
+
+**Sunucu** (`server/test/`): sahte saatle oda kuralları (kurucu yetkisi, geri sayımda tahmin yok, sıra/süre/puan,
+yanlış tahmin kilidi, yanlışta cevap sızmaması, süre dolması, kademeli zorluk, kuruculuk devri, yeniden bağlanma,
+hızlı odanın kendiliğinden başlaması, ad/tahmin temizliği) ve gerçek ağ üzerinden botlarla uçtan uca: özel oda,
+hızlı eşleşme, yeniden bağlanma, hız sınırı, gizli dosyaların sunulmaması.

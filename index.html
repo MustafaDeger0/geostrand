@@ -268,6 +268,112 @@
     </div>
   </div>
 
+  <!-- ================= ÇEVRİM İÇİ: LOBİ ================= -->
+  <div id="lobby" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="lobby-title">
+    <div class="lobby">
+      <header class="guide-header">
+        <h2 id="lobby-title">🌍 Çevrim içi yarış</h2>
+        <button type="button" class="pad-close" id="lobby-close" aria-label="Kapat">✕</button>
+      </header>
+      <p class="lobby-status hidden" id="lobby-status" role="status"></p>
+      <p class="lobby-error hidden" id="lobby-error" role="alert"></p>
+
+      <!-- 1) Seç -->
+      <div class="lobby-body" id="lobby-choose">
+        <div class="lobby-top">
+          <div class="lobby-hero">
+            <canvas id="lobby-hero" width="56" height="56" aria-hidden="true"></canvas>
+            <div><b id="lobby-hero-name">Dr. Geo</b><button type="button" class="link-btn" id="lobby-hero-edit">Kâşifi düzenle</button></div>
+          </div>
+          <p class="lobby-online" id="lobby-online">🌍 Çevrim içi</p>
+        </div>
+        <section class="choice quick-choice">
+          <div>
+            <h3>⚡ Hızlı eşleşme</h3>
+            <p>Dünyanın her yerinden rastgele rakiplerle hemen yarış. En fazla 8 kâşif, 5 tur.</p>
+          </div>
+          <button type="button" class="btn-signal" id="lobby-quick-btn">Rakip bul</button>
+        </section>
+        <div class="lobby-choices">
+          <section class="choice">
+            <h3>🏠 Oda kur</h3>
+            <p>Arkadaşlarına kodu ya da bağlantıyı gönder. Ayarları sen seçer, yarışı sen başlatırsın.</p>
+            <button type="button" class="btn-ghost" id="lobby-create">Oda kur</button>
+          </section>
+          <section class="choice">
+            <h3>🔑 Odaya katıl</h3>
+            <p>Arkadaşının verdiği 4 harfli kodu yaz.</p>
+            <div class="code-row">
+              <input type="text" id="lobby-code" maxlength="4" placeholder="KPZT" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Oda kodu">
+              <button type="button" class="btn-ghost" id="lobby-join">Katıl</button>
+            </div>
+          </section>
+        </div>
+        <p class="lobby-how">Herkes aynı haritaya düşer. İpuçlarını en hızlı toplayıp konumu doğru bilen en çok puanı alır.
+          Yanlış tahmin telsizini 8 saniye kilitler.</p>
+      </div>
+
+      <!-- 2) Hızlı eşleşme bekleme -->
+      <div class="lobby-body hidden" id="lobby-quick">
+        <div class="quick-wait">
+          <div class="radar" aria-hidden="true"><i></i><i></i><span>🌍</span></div>
+          <h3 id="quick-title">Rakip aranıyor…</h3>
+          <p id="quick-info"></p>
+        </div>
+        <ul class="lobby-players" id="quick-players"></ul>
+        <div class="lobby-actions">
+          <button type="button" class="btn-ghost" id="quick-cancel">Vazgeç</button>
+          <button type="button" class="btn-signal hidden" id="quick-alone">Yalnız başla</button>
+        </div>
+      </div>
+
+      <!-- 3) Özel oda -->
+      <div class="lobby-body hidden" id="lobby-room">
+        <div class="room-code-row">
+          <div><span class="label">Oda kodu</span><div class="room-code" id="lobby-room-code">----</div></div>
+          <div class="share">
+            <span class="label">Arkadaşlarına gönder</span>
+            <div class="code-row"><input type="text" id="lobby-link" readonly aria-label="Oda bağlantısı"><button type="button" class="btn-ghost" id="lobby-copy">Kopyala</button></div>
+          </div>
+        </div>
+        <h3>Kâşifler <span class="count" id="lobby-count">1 kâşif</span></h3>
+        <ul class="lobby-players" id="lobby-players"></ul>
+        <div class="lobby-settings" id="lobby-settings">
+          <label><span>Tur sayısı</span><select id="set-rounds"></select></label>
+          <label><span>Tur süresi</span><select id="set-time"></select></label>
+          <label class="wide"><span>Zorluk</span><select id="set-difficulty"></select></label>
+        </div>
+        <div class="lobby-actions">
+          <button type="button" class="btn-ghost" id="lobby-leave">Odadan çık</button>
+          <p class="lobby-wait hidden" id="lobby-wait">Kurucunun yarışı başlatması bekleniyor…</p>
+          <button type="button" class="btn-signal" id="lobby-start">Yarışı başlat</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= ÇEVRİM İÇİ: YARIŞ EKRANI ================= -->
+  <div id="race-hud" class="hidden">
+    <section class="panel race-status">
+      <div class="race-meta"><span id="race-code">Oda</span><span id="race-round">Tur 1/5</span></div>
+      <div class="race-timer" id="race-timer">2:00</div>
+    </section>
+    <section class="panel race-board-panel" id="race-board-panel" aria-label="Sıralama">
+      <h3>Sıralama</h3>
+      <ol class="race-board" id="race-board"></ol>
+    </section>
+  </div>
+  <div id="race-countdown" class="hidden" aria-live="assertive">
+    <span id="race-countdown-num">3</span>
+    <p id="race-countdown-sub"></p>
+  </div>
+  <div id="race-round-end" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="race-card" id="race-round-end-card"></div>
+  </div>
+  <div id="race-final" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="race-card final" id="race-final-card"></div>
+  </div>
+
   <!-- ================= AÇILIŞ ANİMASYONU (IntroCutscene.js) ================= -->
   <div id="cutscene" class="cutscene hidden" role="dialog" aria-label="Hikâye girişi">
     <div class="cs-stage" id="cs-stage"></div>
@@ -303,10 +409,12 @@
       </ol>
       <div class="intro-actions">
         <button type="button" class="btn-signal" id="btn-start">Göreve başla</button>
+        <button type="button" class="btn-signal alt" id="btn-race">🌍 Çevrim içi yarış</button>
         <button type="button" class="btn-ghost" id="btn-hero">🧭 Kâşifi düzenle</button>
         <button type="button" class="btn-ghost" id="btn-guide">📖 Rehber</button>
         <button type="button" class="btn-ghost icon" id="btn-full" aria-label="Tam ekran">⛶</button>
       </div>
+      <p class="net-msg hidden" id="intro-net-msg" role="alert"></p>
       <p class="fine" id="intro-best"><span class="kb-only">Enter ile de başlayabilirsin. Oyun müzikli; <kbd>M</kbd> ile sesi kapatabilirsin.</span><span class="touch-only">Telefonu yatay ya da dikey tutabilirsin. Oyun müzikli; 🔊 ile sesi kapatabilirsin.</span></p>
     </div>
 
@@ -368,6 +476,7 @@
   <script src="js/core/Device.js"></script>
   <script src="js/core/EventBus.js"></script>
   <script src="js/core/Config.js"></script>
+  <script src="js/core/SeededRandom.js"></script>
   <script src="js/data/climates.js"></script>
   <script src="js/data/locations.js"></script>
   <script src="js/data/musicThemes.js"></script>
@@ -391,12 +500,14 @@
   <script src="js/game/entities/Interactable.js"></script>
   <script src="js/game/systems/InteractionSystem.js"></script>
   <script src="js/game/systems/TouchControls.js"></script>
+  <script src="js/game/systems/Ghosts.js"></script>
   <script src="js/game/systems/TerrainPainter.js"></script>
   <script src="js/game/systems/WorldBuilder.js"></script>
   <script src="js/game/systems/LightingOverlay.js"></script>
   <script src="js/game/systems/WeatherFX.js"></script>
   <script src="js/game/scenes/BootScene.js"></script>
   <script src="js/game/scenes/GameScene.js"></script>
+  <script src="js/game/scenes/RaceScene.js"></script>
 
   <!-- 4) Ses (Web Audio, dosyasız) -->
   <script src="js/audio/AudioEngine.js"></script>
@@ -411,6 +522,11 @@
   <script src="js/ui/CharacterCreator.js"></script>
   <script src="js/ui/Guide.js"></script>
   <script src="js/ui/IntroCutscene.js"></script>
+  <script src="js/ui/RaceHUD.js"></script>
+  <script src="js/ui/Lobby.js"></script>
+
+  <!-- 5b) Çevrim içi bağlantı (Socket.IO betiği sunucudan, gerektiğinde yüklenir) -->
+  <script src="js/net/NetClient.js"></script>
 
   <!-- 6) Başlat -->
   <script src="js/main.js"></script>

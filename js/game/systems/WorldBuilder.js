@@ -160,6 +160,17 @@
     }
 
     /**
+     * Konuma ait, önbelleğe alınan dokuları önceden üret.
+     * Çevrim içi yarışta harita tohumla kurulmadan ÖNCE çağrılır: doku bir
+     * oyuncuda hazır, diğerinde yoksa rastgele sayı dizisi kayar ve haritalar
+     * farklılaşırdı.
+     */
+    prepare(location) {
+      const climate = GS.CLIMATES[location.climate];
+      TP().makeGroundTexture(this.scene, `ground_${climate.key}`, climate.groundColor, climate.groundColor2);
+    }
+
+    /**
      * İklimin arazi ayarlarına yer şeklinin etkisini uygular.
      *   OVA  : dağ yok, nehir + tarlalar
      *   PLATO: platoyu yaran kanyon, birkaç kayalık tepe

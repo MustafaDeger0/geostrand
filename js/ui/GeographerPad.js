@@ -106,6 +106,9 @@
       });
       this.el.form.reset();
       this._syncLatitude();
+      clearInterval(this._lockTimer);
+      this._lockTimer = null;
+      this.el.submit.textContent = '📡 Koordinatı gönder';
       this._setFormLocked(false);
       this._clearMarks();
       this.el.result.className = 'pad-result hidden';
@@ -187,6 +190,68 @@
       this.el.result.classList.add('shake');
     }
 
+    // ================================================================== //
+    //  Çevrim içi yarış (cevabı sunucu değerlendirir)
+    // ================================================================== //
+
+    /** Yanlış: sorular işaretlenir + telsiz kilidi geri sayımı */
+    showRaceWrong(result, lockMs) {
+      this.showResult(result, null);
+      const sub = this.el.result.querySelector('.res-head small');
+      if (sub) sub.textContent = `📡 Telsiz ${Math.round(lockMs / 1000)} sn kilitlendi · her yanlış −${GS.CONFIG.RACE.wrongPenalty} puan`;
+      this.lockSubmit(lockMs);
+    }
+
+    /** Doğru: sıralama, süre, puan. Sonraki turu sunucu başlatır. */
+    showRaceSolved({ rank, timeMs, points }) {
+      this._clearMarks();
+      this.fields.forEach((f) => this._mark(f, 'ok', ''));
+      this._setFormLocked(true);
+      this.el.root.classList.add('solved');
+      const medal = ['🥇', '🥈', '🥉'][rank - 1] || '🏁';
+      const s = Math.round(timeMs / 1000);
+      this.el.result.className = 'pad-result success';
+      this.el.result.innerHTML = `
+        <div class="res-main">
+          <div class="res-head">${medal} ${rank}. sırada bildin!</div>
+          <p class="reveal">${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} · +${points} puan</p>
+          <p class="summary">Diğer kâşifler bekleniyor. Tur bitince gerçek konum açıklanacak.</p>
+        </div>`;
+    }
+
+    /** Gönder düğmesini kilitle ve geri say (yanlış tahmin cezası) */
+    lockSubmit(ms) {
+      const btn = this.el.submit;
+      clearInterval(this._lockTimer);
+      const until = performance.now() + ms;
+      const tick = () => {
+        const left = until - performance.now();
+        if (left <= 0) {
+          clearInterval(this._lockTimer);
+          this._lockTimer = null;
+          btn.disabled = false;
+          btn.textContent = '📡 Koordinatı gönder';
+          return;
+        }
+        btn.disabled = true;
+        btn.textContent = `📡 Telsiz kilitli: ${Math.ceil(left / 1000)} sn`;
+      };
+      tick();
+      this._lockTimer = setInterval(tick, 200);
+    }
+
+    /** Sunucuya gönderilirken düğme beklesin */
+    setSending(on) {
+      const btn = this.el.submit;
+      if (on) {
+        btn.disabled = true;
+        btn.textContent = '📡 Gönderiliyor…';
+      } else if (!this._lockTimer) {
+        btn.disabled = false;
+        btn.textContent = '📡 Koordinatı gönder';
+      }
+    }
+
     // ------------------------------------------------------------------ //
     //  Soru işaretleri
     // ------------------------------------------------------------------ //
@@ -226,6 +291,7 @@
 
     /** Sahne kapanırken tüm DOM dinleyicilerini kaldır */
     destroy() {
+      clearInterval(this._lockTimer);
       this._listeners.forEach(([target, type, fn]) => target.removeEventListener(type, fn));
       this._listeners = [];
       this.isOpen = false;

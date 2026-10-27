@@ -119,6 +119,51 @@
       // Yıldız: 3 = hatasız ve hızlı, 2 = en fazla 1 hata, 1 = diğer
     },
 
+    /**
+     * ÇEVRİM İÇİ YARIŞ ("kim daha hızlı bilecek")
+     * Sunucu (server/) ve oyun aynı değerleri kullanır.
+     */
+    RACE: {
+      countdownMs: 3000,        // tur başlamadan geri sayım
+      betweenRoundsMs: 8000,    // tur sonucu ekranı süresi
+      lockMs: 8000,             // yanlış tahminden sonra telsiz kilidi
+      rankPoints: [100, 80, 65, 55, 50], // 1., 2., 3.… bilen; sonrakiler minPoints
+      minPoints: 40,
+      wrongPenalty: 10,         // her yanlış tahmin bu turun puanından düşer
+      floorPoints: 20,          // bilen oyuncu en az bu kadar alır
+      maxPlayers: 20,           // özel oda
+      moveRateMs: 100,          // konum paylaşma aralığı (saniyede 10)
+      defaults: { rounds: 5, roundTime: 150, difficulty: 'progressive' },
+      options: {
+        rounds: [3, 5, 8, 10],
+        roundTime: [90, 150, 240],
+        difficulty: [
+          { key: 'progressive', label: 'Kademeli (kolaydan zora)' },
+          { key: 'easy', label: 'Kolay: yarım küre, iklim, enlem' },
+          { key: 'medium', label: 'Orta: + yer şekli' },
+          { key: 'hard', label: 'Zor: + yer şekli + kıta' },
+        ],
+      },
+      // Hızlı eşleşme: dünyanın her yerinden rastgele rakipler
+      quick: {
+        maxPlayers: 8,
+        rounds: 5, roundTime: 120, difficulty: 'progressive',
+        startAfterMs: 20000,    // 2. oyuncu gelince 20 sn sonra başlar (8 olursa hemen)
+        aloneAfterMs: 25000,    // tek başına 25 sn bekleyen "Yalnız başla" diyebilir
+      },
+    },
+
+    /**
+     * Sunucu adresi. Boş = oyunun açıldığı adres (Render'da oyun ve sunucu aynı yerde).
+     * Oyunu başka yerde (ör. GitHub Pages) yayınlarsanız buraya sunucu adresini yazın:
+     *   serverUrl: 'https://geostrand.onrender.com'
+     * Adres çubuğunda ?sunucu=https://... ile de geçici olarak değiştirilebilir.
+     */
+    NET: {
+      serverUrl: '',
+      connectTimeoutMs: 60000,  // ücretsiz sunucu uykudan uyanırken ~30-50 sn sürebilir
+    },
+
     /** Tahmin değerlendirme */
     PREDICTION: {
       latitudeTolerance: 7,      // Enlem tahmini ±7° içindeyse doğru sayılır

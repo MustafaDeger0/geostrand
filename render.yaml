@@ -1,0 +1,12 @@
+# Render.com "Blueprint": depoyu bağlayınca bu ayarlarla tek tıkla kurulur.
+# Oyun (index.html, js/, css/) ve çevrim içi sunucu aynı adreste çalışır.
+services:
+  - type: web
+    name: geostrand
+    runtime: node
+    plan: free
+    region: frankfurt        # Türkiye'ye en yakın bölge
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true

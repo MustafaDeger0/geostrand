@@ -1328,3 +1328,196 @@ body.cine.cine-hud #act-pad { animation: padCall 0.9s 1.8s ease-in-out 3; }
 html, body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 input[type="text"], textarea { -webkit-user-select: text; user-select: text; }
 img, svg, canvas { -webkit-user-drag: none; }
+
+/* ==========================================================================
+   v8 ÇEVRİM İÇİ YARIŞ: lobi, hızlı eşleşme, yarış ekranı, sıralama, kürsü
+   ========================================================================== */
+.btn-signal.alt { background: #2f8f9a; color: #fff; box-shadow: 0 4px 0 #1d5d64; }
+.btn-signal.alt:active { box-shadow: 0 1px 0 #1d5d64; }
+#btn-race.pulse { animation: startPulse 1.1s ease-in-out infinite alternate; }
+.intro-actions .btn-signal { flex: 0 0 auto; }
+.net-msg { margin: 12px 0 0; padding: 10px 14px; border-radius: 12px; background: rgba(217, 71, 63, 0.18); border: 1px solid rgba(217, 71, 63, 0.5); color: #ffd2cc; font-size: 14px; max-width: 36em; }
+.link-btn { display: block; padding: 0; border: 0; background: none; color: var(--contour); font-weight: 700; font-size: 13px; cursor: pointer; text-decoration: underline; }
+
+/* --- Lobi --- */
+#lobby { z-index: 55; }
+.lobby {
+  width: min(720px, 100%); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px);
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--contours), var(--ink); border: 1px solid var(--ink-line); border-radius: 20px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55); animation: rise 0.18s ease-out;
+}
+.lobby .guide-header { background: transparent; border-bottom: 1px solid var(--ink-line); }
+.lobby-body { padding: 18px 22px 22px; overflow-y: auto; min-height: 0; }
+.lobby-status, .lobby-error { margin: 14px 22px 0; padding: 8px 12px; border-radius: 10px; font-size: 14px; }
+.lobby-status { background: rgba(127, 181, 154, 0.15); color: #c6ead6; }
+.lobby-status.warn { background: rgba(240, 164, 58, 0.18); color: #ffd9a8; }
+.lobby-error { background: rgba(217, 71, 63, 0.2); color: #ffc2bd; }
+.lobby-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.lobby-hero { display: flex; align-items: center; gap: 12px; }
+.lobby-hero canvas { border-radius: 50%; background: #17383b; border: 2px solid var(--contour); }
+.lobby-hero b { display: block; font: 800 18px var(--display); }
+.lobby-online { margin: 0; font-size: 13px; color: var(--contour); font-weight: 700; padding: 4px 10px; border-radius: 999px; background: rgba(127, 181, 154, 0.12); }
+.choice { padding: 14px 16px; border-radius: 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--ink-line); display: grid; gap: 8px; align-content: start; }
+.choice h3 { margin: 0; font: 800 18px var(--display); }
+.choice p { margin: 0; color: var(--muted); font-size: 14px; }
+.choice .btn-ghost { width: 100%; }
+.quick-choice { grid-template-columns: 1fr auto; align-items: center; gap: 16px; border-color: rgba(255, 138, 61, 0.55); background: rgba(255, 138, 61, 0.08); margin-bottom: 12px; }
+.quick-choice .btn-signal { width: auto; padding-inline: 26px; }
+.lobby-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.code-row { display: flex; gap: 8px; }
+.code-row input {
+  flex: 1; min-width: 0; padding: 9px 12px; border-radius: 10px; color: var(--text);
+  background: rgba(255, 255, 255, 0.07); border: 1.5px solid var(--ink-line); font: 700 16px var(--body);
+}
+.code-row input:focus { border-color: var(--flare); outline: none; }
+#lobby-code { letter-spacing: 0.3em; text-transform: uppercase; font: 800 20px var(--display); text-align: center; }
+.code-row .btn-ghost { width: auto; flex-shrink: 0; }
+.lobby-how { margin: 14px 0 0; color: var(--muted); font-size: 14px; }
+.room-code-row { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: end; }
+.label { display: block; font-size: 12px; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+.room-code { font: 800 46px/1 var(--display); letter-spacing: 0.14em; color: var(--flare); }
+#lobby-link { font: 400 14px var(--body); }
+#lobby-room h3 { display: flex; align-items: center; gap: 8px; margin: 20px 0 10px; font: 800 17px var(--display); }
+#lobby-room h3 .count { font: 700 13px var(--body); padding: 1px 9px; border-radius: 999px; background: rgba(127, 181, 154, 0.2); color: var(--contour); }
+.lobby-players { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.lobby-players li {
+  display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 6px; border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05); border: 1px solid var(--ink-line); font-weight: 700; animation: pop 0.25s ease-out;
+}
+.lobby-players li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lobby-players li.me { border-color: var(--flare); }
+.lobby-players li.off { opacity: 0.45; }
+.lobby-players canvas { width: 40px; height: 40px; border-radius: 50%; background: #17383b; flex-shrink: 0; }
+.lobby-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.lobby-settings .wide { grid-column: span 2; }
+.lobby-settings label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.lobby-settings select {
+  padding: 9px 10px; border-radius: 10px; font: 700 15px var(--body); color: var(--text);
+  background: #17383b; border: 1.5px solid var(--ink-line);
+}
+.lobby-settings select:disabled { opacity: 0.7; }
+.lobby-actions { display: flex; align-items: center; gap: 10px; margin-top: 20px; }
+.lobby-actions .btn-signal { width: auto; margin-left: auto; padding-inline: 28px; }
+.lobby-wait { margin: 0 0 0 auto; color: var(--muted); }
+
+/* Hızlı eşleşme: radar */
+.quick-wait { text-align: center; padding: 6px 0 16px; }
+.quick-wait h3 { margin: 12px 0 4px; font: 800 22px var(--display); }
+.quick-wait p { margin: 0; color: var(--muted); min-height: 1.5em; }
+.radar { position: relative; width: 110px; height: 110px; margin: 0 auto; display: grid; place-items: center; }
+.radar span { font-size: 54px; position: relative; z-index: 1; animation: spinSlow 8s linear infinite; }
+.radar i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--contour); opacity: 0; animation: ping 2.4s ease-out infinite; transform-origin: center; }
+.radar i + i { animation-delay: 1.2s; }
+@keyframes spinSlow { to { transform: rotate(360deg); } }
+
+/* --- Yarış ekranı --- */
+body.race-mode .vitals, body.race-mode .hotbar { display: none; }
+body.race-mode .weather-chip { display: none; }
+#race-hud { position: fixed; inset: 0; pointer-events: none; z-index: 11; }
+.race-status { top: var(--et); left: var(--el); width: 210px; padding: 10px 16px; }
+.race-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); font-weight: 700; }
+#race-code { color: var(--flare); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.race-timer { font: 800 44px/1.05 var(--display); font-variant-numeric: tabular-nums; margin-top: 2px; }
+.race-timer.low { color: var(--bad); animation: critical 0.6s ease-in-out infinite alternate; }
+.race-board-panel {
+  top: calc(var(--et) + 76px); right: var(--er); width: 250px; padding: 10px 12px;
+  max-height: calc(100vh - 220px); max-height: calc(100dvh - 220px); overflow-y: auto; pointer-events: auto;
+}
+.race-board-panel h3 { margin: 0 0 6px; font: 800 15px var(--display); }
+.race-board { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.race-board li { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto 36px; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 8px; font-size: 14px; }
+.race-board li.me { background: rgba(255, 138, 61, 0.18); }
+.race-board li.off { opacity: 0.45; }
+.race-board .pos { color: var(--muted); font-weight: 700; }
+.race-board .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
+.race-board .st { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.race-board .st.ok { font-size: 16px; }
+.race-board b { text-align: right; font-variant-numeric: tabular-nums; color: #ffd23f; }
+
+/* Geri sayım */
+#race-countdown {
+  position: fixed; inset: 0; z-index: 44; display: grid; place-content: center; text-align: center; pointer-events: none;
+  background: radial-gradient(circle, rgba(8, 24, 27, 0.55), rgba(8, 24, 27, 0.15) 60%);
+}
+#race-countdown-num { font: 800 clamp(90px, 16vw, 180px)/1 var(--display); color: var(--flare); text-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
+#race-countdown-sub { font: 700 20px var(--body); margin: 8px 0 0; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6); }
+
+/* Tur sonu ve kürsü */
+#race-round-end, #race-final { z-index: 46; }
+.race-card {
+  width: min(620px, 100%); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y: auto;
+  padding: 22px 24px; border-radius: 20px; background: var(--contours), var(--ink);
+  border: 1px solid var(--ink-line); box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55); animation: rise 0.2s ease-out;
+}
+.race-kicker { margin: 0; color: var(--contour); font-weight: 700; }
+.race-card h2 { margin: 4px 0 10px; font: 800 30px/1.1 var(--display); }
+.race-card .badge.ok { background: rgba(127, 181, 154, 0.2); color: #c6ead6; border: 0; }
+.race-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 15px; }
+.race-table td { padding: 7px 8px; border-bottom: 1px solid var(--ink-line); }
+.race-table tr.me td { background: rgba(255, 138, 61, 0.14); }
+.race-table td.pts { text-align: right; font-weight: 700; color: #ffd23f; }
+.race-next { margin: 14px 0 0; color: var(--muted); }
+.podium { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-items: end; margin: 14px 0 16px; }
+.podium-slot { display: grid; justify-items: center; gap: 2px; text-align: center; min-width: 0; }
+.podium-slot b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.podium-slot canvas { width: 64px; height: 64px; border-radius: 50%; background: #17383b; border: 2px solid var(--contour); }
+.podium-slot span { color: var(--muted); font-size: 13px; }
+.podium-step { width: 100%; margin-top: 6px; display: grid; place-items: center; font-size: 28px; border-radius: 10px 10px 0 0; background: rgba(127, 181, 154, 0.18); }
+.p1 .podium-step { height: 90px; background: rgba(255, 210, 63, 0.25); }
+.p2 .podium-step { height: 64px; }
+.p3 .podium-step { height: 46px; }
+.race-final-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; max-height: 30vh; overflow-y: auto; }
+.race-final-list li { display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; padding: 6px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.04); }
+.race-final-list li.me { background: rgba(255, 138, 61, 0.18); }
+.race-final-list .pos { color: var(--muted); font-weight: 700; }
+.race-final-list .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.race-final-list b { color: #ffd23f; }
+.race-actions { display: flex; gap: 8px; margin-top: 18px; align-items: center; flex-wrap: wrap; }
+.race-actions .btn-signal { width: auto; padding-inline: 24px; }
+.race-wait { margin: 0; color: var(--muted); flex: 1; }
+
+/* --- Telefon: lobi ve yarış --- */
+@media (max-width: 600px), (max-height: 520px) {
+  .lobby { width: 100%; height: 100vh; height: 100dvh; max-height: none; border-radius: 0; animation: none; }
+  .lobby .guide-header { padding-top: max(8px, env(safe-area-inset-top)); }
+  .lobby-body { padding: 14px 14px max(18px, env(safe-area-inset-bottom)); }
+  .lobby-choices, .room-code-row, .lobby-settings { grid-template-columns: 1fr; }
+  .lobby-settings .wide { grid-column: auto; }
+  .quick-choice { grid-template-columns: 1fr; }
+  .quick-choice .btn-signal { width: 100%; }
+  .room-code { font-size: 40px; }
+  .race-card { padding: 16px; }
+  .race-card h2 { font-size: 24px; }
+  .race-table { font-size: 13px; }
+  .race-table td { padding: 6px 5px; }
+  .race-actions .btn-signal, .race-actions .btn-ghost { flex: 1 1 auto; }
+}
+@media (max-height: 520px) and (min-width: 700px) {
+  .lobby-choices, .room-code-row { grid-template-columns: 1fr 1fr; }
+  .quick-choice { grid-template-columns: 1fr auto; }
+  .quick-choice .btn-signal { width: auto; }
+}
+@media (max-width: 600px) {
+  .race-status { width: auto; min-width: 140px; padding: 7px 12px; border-radius: 14px; }
+  .race-timer { font-size: 30px; }
+  .race-meta { font-size: 11px; }
+  /* Sıralama: kapalıyken ilk 3 + kendin; dokununca tamamı */
+  .race-board-panel { top: calc(var(--et) + 166px); width: min(48vw, 200px); padding: 6px 8px; max-height: 32vh; border-radius: 12px; }
+  .race-board-panel h3 { font-size: 12px; margin-bottom: 3px; }
+  .race-board-panel h3::after { content: ' ▾'; color: var(--muted); }
+  .race-board li { grid-template-columns: 14px minmax(0, 1fr) auto 28px; gap: 4px; padding: 2px 4px; font-size: 12px; }
+  .race-board .st { font-size: 10px; }
+  .race-board-panel:not(.expanded) .race-board li:nth-child(n+4):not(.me) { display: none; }
+  #race-countdown-sub { font-size: 15px; padding: 0 16px; }
+  body.race-mode .objective { top: calc(var(--et) + 66px); }
+}
+@media (max-height: 520px) {
+  .race-status { width: 170px; padding: 5px 12px; }
+  .race-timer { font-size: 26px; }
+  .race-board-panel { top: calc(var(--et) + 54px); width: 210px; max-height: calc(100dvh - 130px); padding: 6px 8px; }
+  .race-board li { font-size: 12px; padding: 2px 4px; }
+}
+@media (max-width: 600px) {
+  .race-wait { flex-basis: 100%; text-align: center; }
+}
