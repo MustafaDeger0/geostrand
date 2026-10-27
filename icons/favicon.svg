@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- GeoStrand ikonu: enlem çizgili dünya + bilinmeyen konumdan gelen turuncu sinyal -->
+  <rect width="64" height="64" rx="14" fill="#0f2a2e"/>
+  <clipPath id="g"><circle cx="30" cy="34" r="22"/></clipPath>
+  <circle cx="30" cy="34" r="22" fill="#174a50"/>
+  <g clip-path="url(#g)">
+    <path d="M10 24 q8 -6 16 -1 t10 4 q3 5 -3 8 t-11 1 q-7 -2 -12 -12z M33 40 q7 -3 12 2 t3 8 q-4 5 -11 3 t-4 -13z" fill="#7fb59a" opacity=".55"/>
+    <ellipse cx="30" cy="34" rx="9" ry="22" fill="none" stroke="#7fb59a" stroke-width="1.6" opacity=".55"/>
+    <line x1="6" y1="23" x2="54" y2="23" stroke="#7fb59a" stroke-width="1.6" stroke-dasharray="3 3" opacity=".7"/>
+    <line x1="6" y1="45" x2="54" y2="45" stroke="#7fb59a" stroke-width="1.6" stroke-dasharray="3 3" opacity=".7"/>
+    <line x1="6" y1="34" x2="54" y2="34" stroke="#ff8a3d" stroke-width="3"/>
+  </g>
+  <circle cx="30" cy="34" r="22" fill="none" stroke="#7fb59a" stroke-width="3"/>
+  <circle cx="45" cy="19" r="12" fill="#ff8a3d" opacity=".25"/>
+  <circle cx="45" cy="19" r="8.5" fill="#ff8a3d" stroke="#0f2a2e" stroke-width="2.5"/>
+  <text x="45" y="23.6" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="12" fill="#2a1404">?</text>
+</svg>
