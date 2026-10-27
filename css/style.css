@@ -464,7 +464,6 @@ input:disabled + span { opacity: 0.5; cursor: not-allowed; }
 .intro-actions { display: flex; gap: 10px; }
 .intro-actions .btn-signal { width: auto; padding-inline: 32px; font-size: 19px; }
 .fine { font-size: 14px; color: var(--muted); margin-top: 14px; }
-.course { position: absolute; left: 7vw; bottom: 3vh; margin: 0; font-size: 13px; color: var(--muted); }
 
 /* Dünya illüstrasyonu */
 .globe { width: min(46vw, 70vh); justify-self: center; overflow: visible; }
@@ -918,7 +917,6 @@ legend .field-mark { margin-left: auto; }
   .steps span { font-size: 14px; }
   .intro-actions .btn-signal { width: 100%; }
   .intro-actions .btn-ghost:not(.icon) { flex: 1; }
-  .course { position: static; margin-top: 8px; }
 }
 @media (max-height: 520px) {
   .intro { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); padding: 18px 28px 40px; gap: 18px; align-items: start; }
@@ -932,7 +930,6 @@ legend .field-mark { margin-left: auto; }
   .steps span { font-size: 13px; }
   .intro-actions .btn-signal { padding-block: 10px; }
   .fine { margin-top: 8px; font-size: 12px; }
-  .course { position: static; margin-top: 6px; grid-column: 1 / -1; }
 }
 
 /* ==========================================================================
@@ -1313,3 +1310,21 @@ body.cine.cine-hud #act-pad { animation: padCall 0.9s 1.8s ease-in-out 3; }
   .cutscene[data-scene="start"] .cs-text { font-size: 13px; }
   .cutscene[data-scene="start"] .cs-start { margin-top: 6px; padding-block: 9px; font-size: 14px; }
 }
+
+/* ==========================================================================
+   v7.1 düzeltmeleri
+   ========================================================================== */
+/* Rehber: uzun sekmelerde (Nasıl oynanır, İklimler) gövde, sekme satırını
+   sıkıştırıp kesiyordu → başlık ve sekmeler asla küçülmez, yalnız gövde kayar */
+.guide-header, .guide-tabs { flex-shrink: 0; }
+.guide-tabs { overflow-y: hidden; scrollbar-width: none; }
+.guide-tabs::-webkit-scrollbar { display: none; }
+.guide-body { flex: 1 1 auto; min-height: 0; overscroll-behavior: contain; }
+/* Pad ve menü için de aynı güvence */
+.pad-header, .pad-footer { flex-shrink: 0; }
+
+/* Yazılar fareyle seçilemesin (oyun arayüzü gibi davransın);
+   yalnızca yazı yazılan alanlar (kâşif adı) seçilebilir kalır */
+html, body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input[type="text"], textarea { -webkit-user-select: text; user-select: text; }
+img, svg, canvas { -webkit-user-drag: none; }
