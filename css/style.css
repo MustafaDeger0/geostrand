@@ -1521,3 +1521,58 @@ body.race-mode .weather-chip { display: none; }
 @media (max-width: 600px) {
   .race-wait { flex-basis: 100%; text-align: center; }
 }
+
+/* ==========================================================================
+   v8.1 BAŞLIK EKRANI: her cihazda tek ekran (kaydırma çubuğu yok)
+   Yazılar ve boşluklar ekran YÜKSEKLİĞİNE göre ölçeklenir; yine de
+   taşarsa main.js → fitIntro içeriği ekrana sığacak kadar küçültür.
+   ========================================================================== */
+.intro {
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden !important; height: 100vh; height: 100dvh;
+  padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+           max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)) !important;
+}
+.intro-fit {
+  display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: center;
+  gap: 4vw; width: min(1500px, 100%); transform-origin: center center; flex-shrink: 0;
+}
+.intro-fit .intro-text { max-width: 600px; }
+.intro .wordmark { font-size: clamp(40px, min(8.5vw, 12.5vh), 124px); }
+.intro .subtitle { font-size: clamp(18px, min(2.6vw, 4.2vh), 34px); margin: 0.3em 0 min(22px, 2.6vh); }
+.intro .lead { font-size: clamp(14px, min(1.35vw, 2.4vh), 18px); margin-bottom: min(22px, 2.6vh); }
+.intro .steps { gap: clamp(4px, 1.2vh, 10px); margin-bottom: min(26px, 3vh); }
+.intro .steps b { font-size: clamp(14px, 2.2vh, 17px); }
+.intro .steps span { font-size: clamp(12px, 1.9vh, 15px); }
+.intro .steps li::before { width: clamp(24px, 3.6vh, 30px); height: clamp(24px, 3.6vh, 30px); }
+.intro .intro-actions .btn-signal, .intro .intro-actions .btn-ghost { padding-block: clamp(8px, 1.5vh, 13px); }
+.intro .fine { margin-top: min(14px, 1.6vh); }
+.intro .net-msg { margin-top: min(12px, 1.4vh); }
+.intro .globe { width: min(40vw, 72vh); justify-self: center; }
+
+/* Dikey ekran (telefon, dikey tablet): tek sütun, dünya üstte ve küçük */
+@media (orientation: portrait) {
+  .intro-fit { grid-template-columns: 1fr; gap: min(16px, 2vh); justify-items: center; width: min(620px, 100%); }
+  .intro-fit .intro-text { max-width: 620px; width: 100%; }
+  .intro .globe { grid-row: 1; width: min(60vw, 24vh); }
+  .intro .wordmark { font-size: clamp(40px, min(15vw, 9vh), 96px); }
+  .intro .subtitle { font-size: clamp(18px, min(5.5vw, 3.2vh), 30px); }
+  .intro .lead { font-size: clamp(13px, min(4vw, 2.1vh), 18px); }
+  .intro-actions .btn-signal { flex: 1 1 auto; }
+}
+/* Kısa dikey ekran (küçük telefon): dünya gizlenir, yer yazılara kalır */
+@media (orientation: portrait) and (max-height: 900px) and (max-width: 600px), (orientation: portrait) and (max-height: 720px) {
+  .intro .globe { display: none; }
+}
+/* Alçak yatay ekran (yatay telefon): adım açıklamaları ve giriş paragrafı gizlenir
+   (aynı bilgiler Rehber → Nasıl oynanır'da) */
+@media (orientation: landscape) and (max-height: 480px) {
+  .intro .lead { display: none; }
+  .intro .steps span { display: none; }
+  .intro .steps li { align-items: center; }
+  .intro .steps li::before { grid-row: auto; }
+  .intro .globe { width: min(34vw, 78vh); }
+}
+@media (orientation: landscape) and (max-height: 600px) and (min-height: 481px) {
+  .intro .lead { display: none; }
+}

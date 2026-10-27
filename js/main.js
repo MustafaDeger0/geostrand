@@ -35,6 +35,29 @@
 
   const intro = document.getElementById('intro');
 
+  /**
+   * Başlık ekranı her cihazda TEK EKRANA sığsın (kaydırma çubuğu olmasın).
+   * Önce CSS yazı ve boşlukları ekran yüksekliğine göre küçültür; yine de
+   * taşarsa içerik bütünüyle, ekrana tam sığacak kadar ölçeklenir.
+   */
+  const introFit = document.getElementById('intro-fit');
+  function fitIntro() {
+    if (intro.classList.contains('hidden')) return;
+    introFit.style.transform = '';
+    const cs = getComputedStyle(intro);
+    const availH = intro.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const availW = intro.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const scale = Math.min(1, availH / introFit.offsetHeight, availW / introFit.offsetWidth);
+    introFit.dataset.scale = scale.toFixed(3);
+    if (scale < 1) introFit.style.transform = `scale(${scale})`;
+  }
+  GS.fitIntro = fitIntro;
+  fitIntro();
+  window.addEventListener('resize', fitIntro);
+  window.addEventListener('orientationchange', () => setTimeout(fitIntro, 200));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitIntro);
+  new MutationObserver(fitIntro).observe(intro, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+
   // Başlık ekranında en iyi puanı göster
   const best = GS.readBestScore();
   if (best > 0) {
