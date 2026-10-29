@@ -3,8 +3,16 @@
  *  GeoStrand — Hava Efektleri (WeatherFX)
  * ============================================================================
  *  weather.js'teki hava olayını ekrana çizer:
- *    • Parçacıklar (Phaser): yağmur damlası, kar tanesi, savrulan kum
- *      Yayıcı (emitter) her karede kameranın gördüğü alanın üstüne taşınır.
+ *    • Yağış / savrulma: BootScene'de bir kez çizilen, kenarları birleşen
+ *      256x256 hazır dokular (yağmur çizgileri, kar taneleri, kum tozları)
+ *      ekranı kaplayan iki yüzeyde (TileSprite) kaydırılır — tıpkı bir GIF gibi.
+ *      Ön katman iri ve hızlı, arka katman ince ve yavaş → derinlik hissi.
+ *
+ *      NEDEN BÖYLE? Eskiden her damla ayrı bir parçacıktı (ekranda aynı anda
+ *      600-850 nesne). Her karede hepsinin konumu hesaplanıp çiziliyordu; zayıf
+ *      bilgisayar ve telefonlarda oyun kasıyordu. Şimdi her kare yalnızca
+ *      2 dörtgen çizilir, damla sayısı performansı hiç etkilemez.
+ *
  *    • Pus (HTML): ekranı kaplayan yarı saydam renk → görüş azalır
  *  Oyun kuralı içermez; barlara etkisi GameScene'de hesaplanır.
  * ============================================================================
@@ -12,37 +20,26 @@
 (function (GS) {
   'use strict';
 
-  const SPAN = 1800; // yayıcının kapsadığı genişlik (en geniş görüş alanından büyük)
+  const TILE = 256;
+  const PAD = 96; // görünen alanın dışına taşsın: kamera hızlı kaysa ya da sarsılsa da kenar açılmasın
 
-  /** Parçacık ayarları: hava türüne göre */
+  /**
+   * Katman ayarları: doku, hız (dünya px/sn), saydamlık.
+   * sway: kar tanelerinin sağa sola salınımı (px)
+   */
   const PRESETS = {
-    rain: {
-      texture: 'p_rain',
-      anchor: 'top',
-      config: {
-        x: { min: 0, max: SPAN }, y: 0,
-        lifespan: 1100, speedY: { min: 650, max: 850 }, speedX: { min: -90, max: -60 },
-        rotate: 6, alpha: { start: 0.85, end: 0.4 }, quantity: 8, frequency: 16,
-      },
-    },
-    snow: {
-      texture: 'p_snow',
-      anchor: 'top',
-      config: {
-        x: { min: 0, max: SPAN }, y: 0,
-        lifespan: 4200, speedY: { min: 160, max: 260 }, speedX: { min: 120, max: 260 },
-        scale: { min: 0.5, max: 1.2 }, alpha: { start: 0.95, end: 0.5 }, quantity: 4, frequency: 20,
-      },
-    },
-    dust: {
-      texture: 'p_dust',
-      anchor: 'left',
-      config: {
-        x: 0, y: { min: 0, max: SPAN },
-        lifespan: 2600, speedX: { min: 520, max: 780 }, speedY: { min: -30, max: 40 },
-        scale: { min: 0.6, max: 1.4 }, alpha: { start: 0.8, end: 0 }, quantity: 4, frequency: 18,
-      },
-    },
+    rain: [
+      { texture: 'wx_rain2', vx: -45, vy: 560, alpha: 0.6 },
+      { texture: 'wx_rain', vx: -70, vy: 820, alpha: 0.85 },
+    ],
+    snow: [
+      { texture: 'wx_snow2', vx: 120, vy: 140, alpha: 0.7, sway: 14 },
+      { texture: 'wx_snow', vx: 190, vy: 210, alpha: 0.95, sway: 22 },
+    ],
+    dust: [
+      { texture: 'wx_dust2', vx: 450, vy: 12, alpha: 0.6 },
+      { texture: 'wx_dust', vx: 700, vy: 24, alpha: 0.85 },
+    ],
   };
 
   class WeatherFX {
@@ -50,8 +47,8 @@
     constructor(scene, doc) {
       this.scene = scene;
       this.haze = doc.getElementById('weather-haze');
-      this.emitter = null;
-      this.preset = null;
+      this.layers = [];
+      this.time = 0;
     }
 
     /** @param {object} weather GS.WEATHERS öğesi */
@@ -59,23 +56,47 @@
       this.clear();
       this.haze.style.background = weather.haze || 'transparent';
       this.haze.classList.toggle('on', !!weather.haze);
-      if (!weather.particles) return;
-      this.preset = PRESETS[weather.particles];
-      this.emitter = this.scene.add.particles(0, 0, this.preset.texture, this.preset.config).setDepth(3950);
+      const preset = weather.particles && PRESETS[weather.particles];
+      if (!preset) return;
+      this.layers = preset.map((p, i) => ({
+        ...p,
+        sprite: this.scene.add.tileSprite(0, 0, TILE, TILE, p.texture)
+          .setOrigin(0).setAlpha(p.alpha).setDepth(3950 + i),
+        ox: Math.random() * TILE,
+        oy: Math.random() * TILE,
+      }));
+      this.update(0);
     }
 
-    /** Yayıcıyı kameranın görünen alanının üst (ya da sol) kenarına taşı */
-    update() {
-      if (!this.emitter) return;
+    /**
+     * Her kare: yüzeyler kameranın gördüğü alanı kaplar, doku akar.
+     * Doku dünyaya sabitlenir (kamera kayınca damlalar da yerinde kalır),
+     * üstüne rüzgâr/yerçekimi akışı eklenir.
+     * @param {number} dt saniye
+     */
+    update(dt = 0) {
+      if (!this.layers.length) return;
+      this.time += dt;
       const v = this.scene.cameras.main.worldView;
-      if (this.preset.anchor === 'top') this.emitter.setPosition(v.x - 200, v.y - 30);
-      else this.emitter.setPosition(v.x - 60, v.y - 200);
+      const x = Math.floor(v.x) - PAD;
+      const y = Math.floor(v.y) - PAD;
+      const w = Math.ceil(v.width) + PAD * 2;
+      const h = Math.ceil(v.height) + PAD * 2;
+      for (const L of this.layers) {
+        const s = L.sprite;
+        if (s.width !== w || s.height !== h) s.setSize(w, h);
+        s.setPosition(x, y);
+        L.ox = (L.ox - L.vx * dt) % TILE;
+        L.oy = (L.oy - L.vy * dt) % TILE;
+        const sway = L.sway ? Math.sin(this.time * 0.9) * L.sway : 0;
+        s.tilePositionX = x + L.ox + sway;
+        s.tilePositionY = y + L.oy;
+      }
     }
 
     clear() {
-      if (this.emitter) this.emitter.destroy();
-      this.emitter = null;
-      this.preset = null;
+      this.layers.forEach((L) => L.sprite.destroy());
+      this.layers = [];
       this.haze.classList.remove('on');
     }
   }

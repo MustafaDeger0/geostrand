@@ -105,7 +105,9 @@ body.no-fullscreen #act-full, body.no-fullscreen #btn-full, body.no-fullscreen #
   border: 1px solid var(--ink-line);
   border-radius: var(--r-panel);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(6px);
+  /* backdrop-filter (arka planı bulanıklaştırma) bilerek YOK: oyun her karede yeniden
+     çizildiği için tarayıcı her panelin arkasını her karede yeniden bulanıklaştırıyordu;
+     panel zaten %86 opak olduğundan fark görünmüyor ama kasma yapıyordu. */
 }
 
 /* --- Hayatta kalma göstergeleri --- */
@@ -1045,7 +1047,7 @@ legend .field-mark { margin-left: auto; }
   position: absolute; left: 50%; bottom: calc(7vh + 18px); z-index: 4; transform: translate(-50%, 10px);
   width: min(860px, calc(100vw - 32px)); padding: 16px 22px 14px; border-radius: 16px;
   background: rgba(4, 12, 14, 0.82); border: 1px solid rgba(127, 181, 154, 0.35);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
   opacity: 0; transition: opacity 0.35s, transform 0.35s;
 }
 .cs-sub.show { opacity: 1; transform: translate(-50%, 0); }

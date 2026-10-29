@@ -5,6 +5,8 @@
  *  Henüz incelenmemiş bir ipucu nesnesi ekranın dışındaysa, ekranın kenarında
  *  o yöne bakan sarı bir ok ve nesnenin simgesi (🌳 / 🟫 / 📏) gösterir.
  *  Büyük haritada oyuncu "nereye gideceğim?" diye kaybolmaz.
+ *  Yalnız ilk bölgelerde açıktır (CONFIG.GUIDE_ARROWS); sonra ve çevrim içi yarışta
+ *  ipuçlarını oyuncu kendisi keşfeder.
  *
  *  Hesap: dünya koordinatı → ekran koordinatı
  *    ekranX = (nesne.x − kamera.görünürAlan.x) × zoom

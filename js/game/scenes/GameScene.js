@@ -61,7 +61,11 @@
       this.spawn = { x: C.WORLD.width / 2, y: C.WORLD.height / 2 };
       this.physics.world.setBounds(0, 0, C.WORLD.width, C.WORLD.height);
       this.player = new GS.Player(this, this.spawn.x, this.spawn.y, C.PLAYER, this.hero);
-      this.cameras.main.setBounds(0, 0, C.WORLD.width, C.WORLD.height);
+      // Kamera her zaman kâşifi ortalar: sınır, haritanın dışına "kenar payı" kadar taşar
+      // (eskiden harita kenarına yaklaşınca kamera durur, kâşif ekranın köşesine kayardı).
+      // Kenar payındaki alan WorldBuilder'da koyulaşan zeminle çizilir; kâşif oraya giremez.
+      const M = C.WORLD.outerMargin;
+      this.cameras.main.setBounds(-M, -M, C.WORLD.width + M * 2, C.WORLD.height + M * 2);
       this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
       // Açılış animasyonu: oyun ilk kez kurulurken kamera kâşife çok yakın başlar,
       // kâşif yerde yatar; IntroCutscene sırayla cineWake/cineZoomOut/endCinematic çağırır.
@@ -234,9 +238,9 @@
       // 4) Görsel güncellemeler
       this.world.update(this.dayNight.lightLevel);
       this.lighting.update(this.dayNight.darkness, this.player);
-      this.weatherFX.update();
+      this.weatherFX.update(dt);
       this.hud.render(this._hudView());
-      this.indicators.update(this.cameras.main, this.world.interactables, !blocked);
+      this.indicators.update(this.cameras.main, this.world.interactables, !blocked && this.showArrows);
 
       // 5) Ses: ortam karışımı + ayak sesleri (müzik kendi zamanlayıcısıyla çalar)
       this.audio.update(dt, {
@@ -443,6 +447,14 @@
       const weather = GS.WEATHERS[GS.WeatherPicker.pick(location.climate, tier.weatherChance, GS.CLIMATE_WEATHER)];
       this._buildLocation(location, tier, weather, { crates: tier.crates, label: `Bölge ${n}`, levelNumber: n });
 
+      if (n === this.cfg.GUIDE_ARROWS.untilLevel + 1) {
+        // Okların kalktığı ilk bölge: oyuncuya söyle (yeni kademe afişiyle çakışmasın diye biraz sonra)
+        window.setTimeout(() => {
+          if (this.sys.isActive() && this.locations.levelNumber === n) {
+            this.hud.toast('🧭 Artık yön okları yok: ipuçlarını haritada kendin keşfet!', 'info');
+          }
+        }, 4500);
+      }
       if (GS.Progression.isUnlockLevel(n, tiers) && tier.unlock) {
         this.hud.showUnlock(tier.unlock);
       } else if (weather.key !== 'clear') {
@@ -464,6 +476,7 @@
         this.world.destroy();
       }
       this.indicators.clear();
+      this.showArrows = this._arrowsFor(levelNumber);
       this.tier = tier;
       this.weather = weather;
       const clues = GS.ClueFactory.build(location, tier.clues, { landforms: GS.LANDFORMS });
@@ -492,6 +505,14 @@
       this.weatherFX.set(weather);
       this.audio.setClimate(location.climate, weather);
       this.audio.sfx('arrive');
+    }
+
+    /**
+     * Ekran kenarındaki sarı yön okları: yalnız ilk bölgelerde (öğrenme).
+     * Sonrasında ipuçlarını oyuncu kendisi keşfeder. (RaceScene: hiç yok)
+     */
+    _arrowsFor(levelNumber) {
+      return levelNumber <= this.cfg.GUIDE_ARROWS.untilLevel;
     }
 
     _updateObjective() {
@@ -634,6 +655,7 @@
     _teardown() {
       window.clearTimeout(this._travelTimer);
       this.weatherFX.clear();
+      this.lighting.destroy();
       this.pad.destroy();
       this.menu.destroy();
       this.hud.destroy();

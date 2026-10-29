@@ -162,6 +162,11 @@
       return false; // çevrim içi: kimse için zaman durmaz
     }
 
+    /** Yarışta yön okları hiç yok: herkes ipuçlarını kendisi arar (daha zor, daha adil) */
+    _arrowsFor() {
+      return false;
+    }
+
     _isBlocked() {
       return this.raceLocked || this.pad.isOpen || this.menu.isOpen || GS.guide.isOpen || GS.creator.isOpen
         || (GS.lobby && GS.lobby.isOpen);

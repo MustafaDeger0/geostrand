@@ -128,7 +128,7 @@
       const s = GS.CONFIG.SCORE;
       return `
         <ol class="guide-steps">
-          <li><b>İncele.</b> Haritadaki sarı <b>?</b> işaretli nesnelere yürü ve incele (<kbd>E</kbd> ya da telefonda nesneye dokun). Ekran dışındakileri kenardaki oklar gösterir.</li>
+          <li><b>İncele.</b> Haritadaki sarı <b>?</b> işaretli nesnelere yürü ve incele (<kbd>E</kbd> ya da telefonda nesneye dokun). İlk iki bölgede ekran dışındakileri kenardaki sarı oklar gösterir; sonrasında (ve çevrim içi yarışta) onları kendin bulursun.</li>
           <li><b>Tahmin et.</b> <kbd>P</kbd> ile Pad'i aç, soruları cevapla ve koordinatı gönder.</li>
           <li><b>Kurtul.</b> Doğruysa çantana su ve ısı eklenir, sonraki bölgeye uçarsın. Yanlışsa barlar 45 saniye 2 kat hızlı düşer.</li>
         </ol>

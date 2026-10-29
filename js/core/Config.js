@@ -19,10 +19,16 @@
       // climates.js'teki arazi sayıları 1600x1200'lük alan içindir;
       // büyük haritada alanla orantılı çoğaltılır (WorldBuilder).
       terrainBaseArea: 1600 * 1200,
+      outerMargin: 1200,      // Harita dışında kameranın gösterebileceği koyu kenar alanı (kâşif hep ortada kalsın)
       decorCount: 320,        // Haritaya serpiştirilen süs nesnesi sayısı
       extraTreeCount: 16,     // İpucu taşımayan, sadece atmosfer için ağaçlar
       clueMinDistance: 170,   // İpucu nesneleri doğuş noktasına en az bu kadar uzak
-      clueMaxDistance: 540,   // ...ve en fazla bu kadar uzak (kenar okları yolu gösterir)
+      clueMaxDistance: 540,   // ...ve en fazla bu kadar uzak
+    },
+
+    /** Ekran kenarındaki sarı yön okları: bu bölgeye kadar (dahil) gösterilir. Çevrim içinde hiç yok. */
+    GUIDE_ARROWS: {
+      untilLevel: 2,
     },
 
     /**

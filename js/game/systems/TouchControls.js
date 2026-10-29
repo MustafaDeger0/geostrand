@@ -14,7 +14,8 @@
  *     Kısa bir dokunuş, kâşifi o noktaya yürütür. Sarı "?" işaretli bir
  *     nesneye ya da 📦 sandığa dokunursan yanına gider ve kendiliğinden inceler.
  *
- *  Fareyle de çalışır (tıkla-yürü, sürükle-yürü). Klavyeye basınca otomatik
+ *  FAREYLE (bilgisayar): joystick görünmez. Tıkla → oraya yürü; basılı tutup
+ *  sürükle → kâşif fare imlecini takip eder. Klavyeye basınca otomatik
  *  yürüme iptal olur. Dokunmatik kontroller oyun kuralı içermez: yalnızca
  *  bir yön vektörü üretir; Player bu vektörle yürür.
  * ============================================================================
@@ -87,6 +88,7 @@
       this.pointerId = pointer.id;
       this.start = { x: pointer.x, y: pointer.y };
       this.dragging = false;
+      this.isMouse = !pointer.wasTouch;
     }
 
     _move(pointer) {
@@ -95,12 +97,18 @@
       const dy = pointer.y - this.start.y;
       if (!this.dragging) {
         if (Math.hypot(dx, dy) < DRAG_START_PX) return;
-        // Kaydırma başladı → joystick parmağın ilk değdiği yerde belirir
         this.dragging = true;
         this.cancelMove();
+        // Fare: joystick yok, kâşif imleci takip eder (update'te)
+        if (this.isMouse) {
+          this.follow = pointer;
+          return;
+        }
+        // Parmak: kaydırma başladı → joystick parmağın ilk değdiği yerde belirir
         this.stick = { bx: this.start.x, by: this.start.y };
         this.el.classList.add('on');
       }
+      if (this.isMouse) return;
       // Halka parmağı takip eder (yön değiştirmek kolay olsun)
       let bx = this.stick.bx;
       let by = this.stick.by;
@@ -132,6 +140,7 @@
       this.pointerId = null;
       this.dragging = false;
       this.stick = null;
+      this.follow = null;
       this.el.classList.remove('on');
     }
 
@@ -197,7 +206,20 @@
         return this.vector;
       }
 
-      // 2) Dokunulan noktaya yürüme
+      // 2) Fare basılı + sürükleniyor: imlece doğru yürü (kamera kaysa da imlecin dünyadaki yeri)
+      if (this.follow) {
+        const p = this.scene.cameras.main.getWorldPoint(this.follow.x, this.follow.y);
+        const fx = p.x - this.player.x;
+        const fy = p.y - this.player.y;
+        const fd = Math.hypot(fx, fy);
+        if (fd > ARRIVE_PX * 2) {
+          this.vector.x = fx / fd;
+          this.vector.y = fy / fd;
+        }
+        return this.vector;
+      }
+
+      // 3) Dokunulan noktaya yürüme
       const m = this.moveTo;
       if (!m) return this.vector;
       const px = this.player.x;

@@ -124,7 +124,33 @@
       }
       this._buildDecor(climate);
       const fog = this._track(scene.add.graphics().setDepth(3800));
-      TP().drawEdgeFog(fog, this.cfg.width, this.cfg.height, Phaser.Display.Color.IntegerToColor(climate.groundColor).darken(40).color);
+      const edgeColor = Phaser.Display.Color.IntegerToColor(climate.groundColor).darken(40).color;
+      TP().drawEdgeFog(fog, this.cfg.width, this.cfg.height, edgeColor);
+      // Harita dışı: koyu, sisli kenar → "buradan öteye gidilmez" (yürünemez, fizik sınırı)
+      const M = this.cfg.outerMargin || 0;
+      if (M) {
+        const W = this.cfg.width;
+        const H = this.cfg.height;
+        // Harita kenarından dışarıya doğru yumuşakça koyulaşan geçiş (renk geçişli şeritler),
+        // ardından düz koyu alan. Köşelerde üç kenar dış, bir kenar iç saydamlıkta.
+        const c = edgeColor;
+        const B = 160;        // geçiş genişliği
+        const a0 = 0.12;      // harita kenarında (iç kenar sisiyle aynı)
+        const a1 = 0.6;       // geçişin dış ucunda ve ötesinde
+        fog.fillGradientStyle(c, c, c, c, a1, a1, a0, a0).fillRect(0, -B, W, B);        // üst
+        fog.fillGradientStyle(c, c, c, c, a0, a0, a1, a1).fillRect(0, H, W, B);         // alt
+        fog.fillGradientStyle(c, c, c, c, a1, a0, a1, a0).fillRect(-B, 0, B, H);        // sol
+        fog.fillGradientStyle(c, c, c, c, a0, a1, a0, a1).fillRect(W, 0, B, H);         // sağ
+        fog.fillGradientStyle(c, c, c, c, a1, a1, a1, a0).fillRect(-B, -B, B, B);       // köşeler
+        fog.fillGradientStyle(c, c, c, c, a1, a1, a0, a1).fillRect(W, -B, B, B);
+        fog.fillGradientStyle(c, c, c, c, a1, a0, a1, a1).fillRect(-B, H, B, B);
+        fog.fillGradientStyle(c, c, c, c, a0, a1, a1, a1).fillRect(W, H, B, B);
+        fog.fillStyle(c, a1);
+        fog.fillRect(-M, -M, W + M * 2, M - B);        // üst
+        fog.fillRect(-M, H + B, W + M * 2, M - B);     // alt
+        fog.fillRect(-M, -B, M - B, H + B * 2);        // sol
+        fog.fillRect(W + B, -B, M - B, H + B * 2);     // sağ
+      }
 
       // Su parıltıları yavaşça yanıp söner
       this.shines.forEach((s) => {
@@ -209,7 +235,11 @@
       const { width, height } = this.cfg;
       const key = `ground_${climate.key}`;
       TP().makeGroundTexture(this.scene, key, climate.groundColor, climate.groundColor2);
-      const ground = this._track(this.scene.add.tileSprite(0, 0, width, height, key).setOrigin(0).setDepth(-20));
+      // Zemin haritanın dışına da taşar (kenar payı): kamera kâşifi hep ortaladığından
+      // harita kenarında da ekran boş kalmaz. Dışarısı _buildOuterShade ile koyulaştırılır.
+      const M = this.cfg.outerMargin || 0;
+      const ground = this._track(this.scene.add.tileSprite(-M, -M, width + M * 2, height + M * 2, key)
+        .setOrigin(0).setDepth(-20));
       // Yüksek yerler (plato, dağ) biraz daha açık ve soluk; ova daha doygun
       if (location.landform !== 'OVA') ground.setTint(0xeeeeee);
 

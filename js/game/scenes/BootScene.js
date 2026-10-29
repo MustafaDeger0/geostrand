@@ -28,6 +28,8 @@
       this._makeParticles();
       this._makeDecor();
       this._makeLight();
+      this._makeLanternHole();
+      this._makeWeatherLayers();
       this.scene.start(GS.startScene || 'GameScene'); // tek oyunculu ya da çevrim içi yarış (main.js)
     }
 
@@ -249,6 +251,74 @@
 
     // -------------------------------------------------------------- Fener ışığı
     /** Ortası opak, kenarları şeffaf radyal gradyan (Canvas API ile) */
+    /**
+     * Hava katmanları: yağmur / kar / kum için 256x256, kenarları birleşen hazır
+     * "film şeridi" dokuları. Oyun sırasında tek tek damla üretmek yerine bu doku
+     * ekranı kaplayan bir yüzeyde kaydırılır (GIF gibi): her kare yalnızca 2 çizim
+     * → yağmurda, tipide, kum fırtınasında kasma olmaz.
+     * Kendi küçük rastgele sayı üreticisini kullanır; oyunun rastgele dizisine
+     * (çevrim içi aynı harita tohumu) dokunmaz.
+     */
+    _makeWeatherLayers() {
+      const S = 256;
+      let seed = 1234567;
+      const rnd = () => {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+        return seed / 0x7fffffff;
+      };
+      // Doku kenarından taşan çizimler karşı kenarda da çizilir → kusursuz tekrar
+      const wrap = (fn) => [-S, 0, S].forEach((ox) => [-S, 0, S].forEach((oy) => fn(ox, oy)));
+      const make = (key, draw) => {
+        const tex = this.textures.createCanvas(key, S, S);
+        draw(tex.getContext());
+        tex.refresh();
+      };
+
+      // Yağmur: rüzgârla hafif sola eğik çizgiler (önde iri, arkada ince damlalar)
+      ['wx_rain', 'wx_rain2'].forEach((key, layer) => make(key, (ctx) => {
+        ctx.lineCap = 'round';
+        const n = layer ? 34 : 26;
+        for (let i = 0; i < n; i++) {
+          const x = rnd() * S, y = rnd() * S;
+          const len = (layer ? 10 : 16) + rnd() * 10;
+          ctx.strokeStyle = `rgba(214,232,248,${(layer ? 0.45 : 0.75) + rnd() * 0.2})`;
+          ctx.lineWidth = layer ? 1.2 : 1.8;
+          wrap((ox, oy) => {
+            ctx.beginPath();
+            ctx.moveTo(x + ox, y + oy);
+            ctx.lineTo(x + ox - len * 0.1, y + oy + len);
+            ctx.stroke();
+          });
+        }
+      }));
+
+      // Kar: farklı boyda yumuşak taneler
+      ['wx_snow', 'wx_snow2'].forEach((key, layer) => make(key, (ctx) => {
+        const n = layer ? 40 : 22;
+        for (let i = 0; i < n; i++) {
+          const x = rnd() * S, y = rnd() * S;
+          const r = layer ? 1 + rnd() * 1.2 : 1.8 + rnd() * 1.8;
+          ctx.fillStyle = `rgba(255,255,255,${0.75 + rnd() * 0.25})`;
+          wrap((ox, oy) => {
+            ctx.beginPath();
+            ctx.arc(x + ox, y + oy, r, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+      }));
+
+      // Kum: yatay savrulan çizgiler ve tozlar
+      ['wx_dust', 'wx_dust2'].forEach((key, layer) => make(key, (ctx) => {
+        const n = layer ? 40 : 22;
+        for (let i = 0; i < n; i++) {
+          const x = rnd() * S, y = rnd() * S;
+          const len = layer ? 3 + rnd() * 5 : 10 + rnd() * 14;
+          ctx.fillStyle = `rgba(226,192,138,${0.5 + rnd() * 0.4})`;
+          wrap((ox, oy) => ctx.fillRect(x + ox, y + oy, len, layer ? 1.5 : 2));
+        }
+      }));
+    }
+
     _makeLight() {
       const size = 256;
       const tex = this.textures.createCanvas('light', size, size);
@@ -259,6 +329,20 @@
       grad.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, size, size);
+      tex.refresh();
+    }
+
+    /** 'light'ın tersi: ortası saydam, kenarları opak (gece fener deliği) */
+    _makeLanternHole() {
+      const size = 256;
+      const tex = this.textures.createCanvas('lantern_hole', size, size);
+      const ctx = tex.getContext();
+      const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+      grad.addColorStop(0, 'rgba(255,255,255,0)');
+      grad.addColorStop(0.45, 'rgba(255,255,255,0.15)');
+      grad.addColorStop(1, 'rgba(255,255,255,1)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, size, size); // dairenin dışı (köşeler) son renkle, tam opak dolar
       tex.refresh();
     }
   }
