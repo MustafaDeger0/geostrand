@@ -31,8 +31,11 @@
         let g = this.items.get(p.id);
         if (!g) g = this._create(p);
         const medal = p.solved ? ` ${['🥇', '🥈', '🥉'][p.rank - 1] || '✔'}` : '';
-        const text = `${p.name}${medal}`;
+        const text = `${GS.mod.name(p)}${medal}`;
         if (g.label.text !== text) g.label.setText(text);
+        g.hidden = GS.mod.isHidden(p.id);            // gizlenen oyuncunun kâşifi görünmez
+        g.sprite.setVisible(!g.hidden);
+        g.label.setVisible(!g.hidden);
         g.sprite.setAlpha(p.connected ? 0.78 : 0.3);
         g.label.setAlpha(p.connected ? 1 : 0.4);
       });

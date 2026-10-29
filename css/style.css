@@ -6,6 +6,13 @@
    Tema değiştirmek için yalnızca :root değişkenlerini düzenleyin.
    ========================================================================== */
 :root {
+  /* Güvenli alanlar (çentik, Android gezinme çubuğu). iOS ve yeni tarayıcılar env() verir;
+     Android uygulamasında Capacitor aynı değerleri --safe-area-inset-* değişkenleriyle verir. */
+  --sat: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --sab: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+  --sal: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+  --sar: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+
   /* Renkler */
   --ink: #0f2a2e;            /* panel tabanı: harita mürekkebi */
   --ink-2: #173b40;
@@ -35,10 +42,10 @@
   --gap: 14px;
   --edge: 14px;
   /* Kenar boşlukları: çentikli telefonlarda güvenli alan kadar içeride */
-  --et: max(var(--edge), env(safe-area-inset-top));
-  --eb: max(var(--edge), env(safe-area-inset-bottom));
-  --el: max(var(--edge), env(safe-area-inset-left));
-  --er: max(var(--edge), env(safe-area-inset-right));
+  --et: max(var(--edge), var(--sat));
+  --eb: max(var(--edge), var(--sab));
+  --el: max(var(--edge), var(--sal));
+  --er: max(var(--edge), var(--sar));
 
   /* Topoğrafik desen (başlık ekranı, Pad başlığı, menü) */
   --contours:
@@ -861,14 +868,14 @@ legend .field-mark { margin-left: auto; }
     width: 100%; height: 100vh; height: 100dvh; max-height: none; border-radius: 0;
     box-shadow: none; animation: none;
   }
-  .pad-header, .guide-header { padding: 8px 12px; padding-top: max(8px, env(safe-area-inset-top)); gap: 8px; }
+  .pad-header, .guide-header { padding: 8px 12px; padding-top: max(8px, var(--sat)); gap: 8px; }
   .pad-header h2 { font-size: 16px; }
   .pad-logo { display: none; }
   .pad-guide { padding: 0 10px; }
   .pad-body { padding: 14px 14px 18px; gap: 16px; }
   .pad-footer {
     flex-wrap: wrap; gap: 8px; padding: 8px 12px;
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    padding-bottom: max(8px, var(--sab));
   }
   .pad-footer .pad-result { flex-basis: 100%; padding: 7px 12px; }
   .pad-footer #pad-submit { flex: 1; min-width: 0; padding-block: 12px; }
@@ -884,11 +891,11 @@ legend .field-mark { margin-left: auto; }
   .seg span { padding: 11px 8px; }
   .lat-row input { height: 34px; }
 
-  .menu { padding: 18px; padding-top: max(18px, env(safe-area-inset-top)); overflow-y: auto; }
+  .menu { padding: 18px; padding-top: max(18px, var(--sat)); overflow-y: auto; }
   .slider { grid-template-columns: 110px 1fr 34px; }
   .creator { padding: 14px; gap: 12px; overflow-y: auto; align-content: start; }
   .creator-form h2 { font-size: 22px; }
-  .creator-actions { position: sticky; bottom: 0; padding: 8px 0 max(4px, env(safe-area-inset-bottom)); background: var(--ink); }
+  .creator-actions { position: sticky; bottom: 0; padding: 8px 0 max(4px, var(--sab)); background: var(--ink); }
   .guide-body { padding: 14px 14px 22px; }
   .cards { grid-template-columns: 1fr; }
   .compare { grid-template-columns: 1fr; }
@@ -907,7 +914,7 @@ legend .field-mark { margin-left: auto; }
 
 /* ======================================== BAŞLIK EKRANI: küçük ekranlar */
 @media (max-width: 600px) {
-  .intro { padding: max(20px, env(safe-area-inset-top)) 18px 56px; gap: 10px; align-content: start; }
+  .intro { padding: max(20px, var(--sat)) 18px 56px; gap: 10px; align-content: start; }
   .globe { width: min(52vw, 210px); }
   .wordmark { font-size: clamp(46px, 15vw, 64px); }
   .subtitle { margin: 4px 0 12px; font-size: 21px; }
@@ -1019,19 +1026,19 @@ legend .field-mark { margin-left: auto; }
 
 /* Üst bilgiler */
 .cs-chip {
-  position: absolute; top: calc(7vh + 12px); left: max(16px, env(safe-area-inset-left)); z-index: 4;
+  position: absolute; top: calc(7vh + 12px); left: max(16px, var(--sal)); z-index: 4;
   padding: 4px 12px; border-radius: 999px; font: 700 12px var(--body); letter-spacing: 0.08em; text-transform: uppercase;
   background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.2); color: var(--contour);
 }
 .cs-skip {
-  position: absolute; top: calc(7vh + 8px); right: max(16px, env(safe-area-inset-right)); z-index: 4; cursor: pointer;
+  position: absolute; top: calc(7vh + 8px); right: max(16px, var(--sar)); z-index: 4; cursor: pointer;
   padding: 8px 14px; border-radius: 999px; font-weight: 700; color: #fff;
   background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(255, 255, 255, 0.3);
 }
 .cs-skip:hover { background: rgba(255, 255, 255, 0.15); }
 .cs-skip kbd { font-size: 10px; margin-left: 4px; }
-.cutscene.open-bars .cs-chip { top: max(14px, env(safe-area-inset-top)); }
-.cutscene.open-bars .cs-skip { top: max(10px, env(safe-area-inset-top)); }
+.cutscene.open-bars .cs-chip { top: max(14px, var(--sat)); }
+.cutscene.open-bars .cs-skip { top: max(10px, var(--sat)); }
 
 /* Altyazı (daktilo) */
 .cs-sub {
@@ -1050,7 +1057,7 @@ legend .field-mark { margin-left: auto; }
 .cs-next { display: block; text-align: right; font-size: 13px; color: var(--muted); opacity: 0; transition: opacity 0.3s; }
 .cs-next.show { opacity: 1; animation: blink 1.4s ease-in-out infinite; }
 .cs-start { margin-top: 12px; font-size: clamp(15px, 2vw, 19px); letter-spacing: 0.04em; animation: startPulse 1.2s ease-in-out infinite alternate; }
-.cutscene.open-bars .cs-sub { bottom: max(18px, env(safe-area-inset-bottom)); }
+.cutscene.open-bars .cs-sub { bottom: max(18px, var(--sab)); }
 @keyframes blink { 50% { opacity: 0.25; } }
 @keyframes startPulse { to { box-shadow: 0 4px 0 var(--flare-deep), 0 0 0 8px rgba(255, 138, 61, 0.28); } }
 
@@ -1306,7 +1313,7 @@ body.cine.cine-hud #act-pad { animation: padCall 0.9s 1.8s ease-in-out 3; }
 }
 @media (max-height: 520px) {
   /* Yatay telefon: son sahnede yazı, çanta ile düğmelerin arasında altta dursun */
-  .cutscene[data-scene="start"] .cs-sub { top: auto; bottom: max(8px, env(safe-area-inset-bottom)); width: min(400px, 44vw); padding: 8px 12px; }
+  .cutscene[data-scene="start"] .cs-sub { top: auto; bottom: max(8px, var(--sab)); width: min(400px, 44vw); padding: 8px 12px; }
   .cutscene[data-scene="start"] .cs-text { font-size: 13px; }
   .cutscene[data-scene="start"] .cs-start { margin-top: 6px; padding-block: 9px; font-size: 14px; }
 }
@@ -1480,8 +1487,8 @@ body.race-mode .weather-chip { display: none; }
 /* --- Telefon: lobi ve yarış --- */
 @media (max-width: 600px), (max-height: 520px) {
   .lobby { width: 100%; height: 100vh; height: 100dvh; max-height: none; border-radius: 0; animation: none; }
-  .lobby .guide-header { padding-top: max(8px, env(safe-area-inset-top)); }
-  .lobby-body { padding: 14px 14px max(18px, env(safe-area-inset-bottom)); }
+  .lobby .guide-header { padding-top: max(8px, var(--sat)); }
+  .lobby-body { padding: 14px 14px max(18px, var(--sab)); }
   .lobby-choices, .room-code-row, .lobby-settings { grid-template-columns: 1fr; }
   .lobby-settings .wide { grid-column: auto; }
   .quick-choice { grid-template-columns: 1fr; }
@@ -1530,8 +1537,8 @@ body.race-mode .weather-chip { display: none; }
 .intro {
   display: flex; align-items: center; justify-content: center;
   overflow: hidden !important; height: 100vh; height: 100dvh;
-  padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
-           max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)) !important;
+  padding: max(16px, var(--sat)) max(20px, var(--sar))
+           max(16px, var(--sab)) max(20px, var(--sal)) !important;
 }
 .intro-fit {
   display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: center;
@@ -1585,4 +1592,46 @@ body.race-mode .weather-chip { display: none; }
     gap: clamp(28px, 5vw, 110px);
   }
   .intro .globe { width: min(36vw, 66vh); }
+}
+/* Yazı ekranın soluna değil, %8 içeriden başlasın; dünya sağdan aynı uzaklıkta dursun */
+@media (orientation: landscape) {
+  .intro-fit {
+    width: 100%;
+    padding-inline: calc(8vw - 20px) 6vw;   /* yazı ekranın ~%8'inden başlar */
+    justify-content: space-between;
+    gap: clamp(24px, 4vw, 80px);
+  }
+}
+@media (orientation: landscape) and (max-width: 900px) {
+  .intro-fit { padding-inline: 3vw; }
+}
+
+/* ==========================================================================
+   v9: oyuncu gizle / şikâyet menüsü, mobil uygulama
+   ========================================================================== */
+.tappable { cursor: pointer; }
+.race-board li.tappable:hover, .lobby-players li.tappable:hover { background: rgba(255, 255, 255, 0.08); }
+.mod-pop {
+  position: fixed; z-index: 90; width: 230px; display: grid; gap: 6px; padding: 10px;
+  background: var(--ink); border: 1px solid var(--ink-line); border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55); animation: pop 0.15s ease-out;
+}
+.mod-pop b { font: 800 14px var(--display); padding: 0 4px 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mod-pop button {
+  text-align: left; padding: 10px 12px; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 14px;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--ink-line); color: var(--text);
+}
+.mod-pop button:hover { border-color: var(--contour); }
+.name-tip { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--muted); }
+.guide-body a { color: var(--flare-deep); font-weight: 700; }
+
+/* Dar telefonda Pad başlığı tek satır: başlık kısalır, Rehber düğmesi yalnız simge */
+.pad-header h2, .pad-location { white-space: nowrap; }
+.pad-header h2 { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+@media (max-width: 420px) {
+  .pad-header h2 { font-size: 15px; }
+  .pad-location { font-size: 13px; }
+  .pad-guide-text { display: none; }
+  .pad-guide { width: 36px; padding: 0; flex-shrink: 0; }
+  .pad-close { flex-shrink: 0; }
 }

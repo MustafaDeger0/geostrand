@@ -9,6 +9,8 @@
 (function (GS) {
   'use strict';
 
+  GS.APP_VERSION = '1.0.0';
+
   GS.CONFIG = {
     /** Dünya (harita) boyutu, piksel */
     WORLD: {
@@ -161,6 +163,9 @@
      */
     NET: {
       serverUrl: '',
+      // Mobil uygulama (App Store / Google Play) ve dosyadan açılan oyun bu sunucuya bağlanır.
+      // Render adresiniz farklıysa burayı değiştirin.
+      appServerUrl: 'https://geostrand.onrender.com',
       connectTimeoutMs: 60000,  // ücretsiz sunucu uykudan uyanırken ~30-50 sn sürebilir
     },
 

@@ -302,7 +302,7 @@
         c.width = c.height = 48;
         GS.CharacterRenderer.drawPortrait(c, GS.CharacterRenderer.normalize(p.appearance));
         const name = this.doc.createElement('span');
-        name.textContent = p.name;
+        name.textContent = GS.mod.name(p);
         if (p.id === s.hostId && !s.isPublic) {
           const crown = this.doc.createElement('i');
           crown.title = 'Kurucu';
@@ -310,6 +310,10 @@
           name.appendChild(crown);
         }
         li.append(c, name);
+        if (p.id !== this.net.playerId) {
+          li.classList.add('tappable');
+          li.addEventListener('click', () => GS.mod.openMenu(li, p));
+        }
         ul.appendChild(li);
       });
     }

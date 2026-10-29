@@ -45,7 +45,7 @@ const MIME = {
   '.woff2': 'font/woff2',
 };
 // Sunulmayacak klasör ve dosyalar
-const BLOCKED = /^\/(server|node_modules|tests|\.git)(\/|$)|\/\.|^\/(package(-lock)?\.json|render\.yaml)$/;
+const BLOCKED = /^\/(server|node_modules|tests|scripts|android|ios|www|store|\.git|\.github)(\/|$)|\/\.|^\/(package(-lock)?\.json|render\.yaml|codemagic\.yaml|capacitor\.config\.json)$/;
 
 // ====================================================================== //
 //  1) Oyun dosyaları
@@ -258,6 +258,15 @@ function createServer({ clock, rng, log = console.log } = {}) {
       socket.volatile.to(`room:${s.room.code}`).emit('player:moved', {
         id: s.playerId, x: Math.round(x), y: Math.round(y), f, m: !!p.m,
       });
+    });
+
+    // Uygunsuz ad şikâyeti (App Store / Google Play kullanıcı içeriği kuralı)
+    on('player:report', 2, (p, reply) => {
+      const s = sockets.get(socket.id);
+      if (!s) return reply({ error: 'Odada değilsin.' });
+      const res = s.room.report(s.playerId, p.id);
+      if (res.ok) log(`[şikâyet] oda ${s.room.code}: ${s.playerId} → ${p.id}${res.renamed ? ' (ad değiştirildi)' : ''}`);
+      reply(res);
     });
 
     // Lobide "şu an X kâşif çevrim içi" bilgisi

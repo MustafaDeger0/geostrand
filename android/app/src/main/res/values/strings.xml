@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">GeoStrand</string>
+    <string name="title_activity_main">GeoStrand</string>
+    <string name="package_name">com.geostrand.enlemdenkacis</string>
+    <string name="custom_url_scheme">com.geostrand.enlemdenkacis</string>
+</resources>

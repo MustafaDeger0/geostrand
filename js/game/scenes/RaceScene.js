@@ -41,10 +41,16 @@
           this.ghosts.sync(s.players, net.playerId);
         }),
         net.on('player:moved', (m) => this.ghosts.move(m)),
+        // Gizle/göster seçilince tablo ve haritadaki kâşifler hemen güncellensin
+        GS.mod.onChange(() => {
+          if (!net.state) return;
+          this.raceHud.renderBoard(net.state);
+          this.ghosts.sync(net.state.players, net.playerId);
+        }),
         net.on('player:solved', (e) => {
           if (e.id === net.playerId) return;
           const s = Math.round(e.timeMs / 1000);
-          this.hud.toast(`${['🥇', '🥈', '🥉'][e.rank - 1] || '✔'} ${e.name} bildi! (${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')})`, 'info');
+          this.hud.toast(`${['🥇', '🥈', '🥉'][e.rank - 1] || '✔'} ${GS.mod.name(e)} bildi! (${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')})`, 'info');
         }),
         net.on('round:end', (e) => this._roundEnd(e)),
         net.on('game:over', (e) => this._gameOver(e)),

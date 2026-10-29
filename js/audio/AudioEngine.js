@@ -99,10 +99,30 @@
      */
     update(dt, state) {
       if (!this.ready) return;
-      // Tarayıcı sekmesi geri gelince ses bağlamını uyandır (çevrimdışı bağlamda resume yoktur)
-      if (this.ctx.state === 'suspended' && !(window.OfflineAudioContext && this.ctx instanceof OfflineAudioContext)) this.ctx.resume();
+      // Sekme/uygulama geri gelince ses bağlamını uyandır (çevrimdışı bağlamda resume yoktur)
+      // (iOS'ta telefon çalınca bağlam "interrupted" olur: o da uyandırılır)
+      const asleep = this.ctx.state === 'suspended' || this.ctx.state === 'interrupted';
+      if (!this.paused && asleep && !(window.OfflineAudioContext && this.ctx instanceof OfflineAudioContext)) {
+        const now = performance.now();
+        if (!this._lastResume || now - this._lastResume > 1000) { // saniyede en fazla bir deneme
+          this._lastResume = now;
+          this.ctx.resume().catch(() => {});
+        }
+      }
       this.ambience.update(dt, state);
       this.music.setMood(state.light);
+    }
+
+    /** Uygulama arka plana alındı: tüm sesler sussun (pil ve kullanıcı için) */
+    pause() {
+      this.paused = true;
+      if (this.ready && this.ctx.state === 'running' && this.ctx.suspend) this.ctx.suspend().catch(() => {});
+    }
+
+    /** Uygulama ön plana döndü */
+    resume() {
+      this.paused = false;
+      if (this.ready && this.ctx.state !== 'running' && this.ctx.state !== 'closed') this.ctx.resume().catch(() => {});
     }
 
     toggleMute() {

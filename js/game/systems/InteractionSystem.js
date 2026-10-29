@@ -28,7 +28,12 @@
       this.targets = [];
       this.focused = null;
 
-      this.key = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+      // E tuşu OLAYLA dinlenir: kare beklenmez. (Kare başına "az önce basıldı mı?" bakmak,
+      // yavaş cihazda basma ve bırakma aynı kareye düşünce tuşu kaçırıyordu.)
+      this.enabled = false;
+      scene.input.keyboard.on('keydown-E', () => {
+        if (this.enabled) this.trigger();
+      });
 
       this.promptText = scene.add
         .text(0, 0, '', {
@@ -51,6 +56,7 @@
 
     /** @param {boolean} enabled Pad açıksa false gelir */
     update(enabled) {
+      this.enabled = enabled;
       if (!enabled) {
         this._setFocus(null);
         return;
@@ -69,11 +75,7 @@
         }
       }
       this._setFocus(nearest);
-
-      // 3) E tuşu
-      if (nearest && Phaser.Input.Keyboard.JustDown(this.key)) {
-        this.bus.emit(GS.EVENTS.INTERACT, nearest);
-      }
+      // 3) E tuşu: yukarıdaki olay dinleyicisi trigger() çağırır
     }
 
     /** Dokunmatik "İncele" düğmesi: odaktaki nesneyi incele */

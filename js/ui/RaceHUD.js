@@ -101,7 +101,15 @@
           const status = inRound
             ? (p.solved ? (MEDALS[p.rank - 1] || '✔') : `🔍 ${p.found}/${total}${p.wrongs ? ` ✘${p.wrongs}` : ''}`)
             : '';
-          li.append(span('pos', String(i + 1)), span('nm', p.name), span(`st${p.solved && inRound ? ' ok' : ''}`, status), el('b', String(p.score)));
+          li.append(span('pos', String(i + 1)), span('nm', GS.mod.name(p)), span(`st${p.solved && inRound ? ' ok' : ''}`, status), el('b', String(p.score)));
+          // Başka bir oyuncuya dokun: gizle / şikâyet et
+          if (p.id !== this.net.playerId) {
+            li.classList.add('tappable');
+            li.addEventListener('click', (e) => {
+              e.stopPropagation();
+              GS.mod.openMenu(li, p);
+            });
+          }
           ul.appendChild(li);
         });
       this.el.boardPanel.dataset.count = String(state.players.length);
@@ -128,7 +136,7 @@
         const tr = el('tr', '', r.id === selfId ? 'me' : '');
         tr.append(
           el('td', r.solved ? MEDALS[r.rank - 1] || `${r.rank}.` : '—'),
-          el('td', r.name),
+          el('td', GS.mod.name(r)),
           el('td', r.solved ? formatTime(r.timeMs) : 'bilemedi'),
           el('td', r.wrongs ? `✘${r.wrongs}` : ''),
           el('td', r.points ? `+${r.points}` : '0', 'pts'),
@@ -173,7 +181,7 @@
           const c = this.doc.createElement('canvas');
           c.width = c.height = 64;
           GS.CharacterRenderer.drawPortrait(c, GS.CharacterRenderer.normalize(p.appearance));
-          box.append(c, el('b', p.name), el('span', `${p.score} puan`), el('div', MEDALS[place - 1], 'podium-step'));
+          box.append(c, el('b', GS.mod.name(p)), el('span', `${p.score} puan`), el('div', MEDALS[place - 1], 'podium-step'));
         }
         podium.appendChild(box);
       });
@@ -182,7 +190,7 @@
       const list = el('ol', '', 'race-final-list');
       standings.forEach((p, i) => {
         const li = el('li', '', p.id === selfId ? 'me' : '');
-        li.append(span('pos', String(i + 1)), span('nm', p.name), el('b', String(p.score)));
+        li.append(span('pos', String(i + 1)), span('nm', GS.mod.name(p)), el('b', String(p.score)));
         list.appendChild(li);
       });
       card.appendChild(list);

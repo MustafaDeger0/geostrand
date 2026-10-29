@@ -1,0 +1,33 @@
+{
+  "appId": "com.geostrand.enlemdenkacis",
+  "appName": "GeoStrand",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "backgroundColor": "#08181b",
+  "android": {
+    "backgroundColor": "#08181b",
+    "allowMixedContent": false
+  },
+  "ios": {
+    "backgroundColor": "#08181b",
+    "contentInset": "never",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 4000,
+      "launchAutoHide": true,
+      "launchFadeOutDuration": 250,
+      "backgroundColor": "#08181b",
+      "showSpinner": false,
+      "androidScaleType": "CENTER_CROP"
+    },
+    "StatusBar": {
+      "overlaysWebView": true,
+      "style": "DARK",
+      "backgroundColor": "#00000000"
+    }
+  }
+}

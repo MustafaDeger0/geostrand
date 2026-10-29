@@ -1,0 +1,83 @@
+# GeoStrand — Android uygulamasını bulutta derler (ücretsiz, GitHub Actions)
+#
+# Ne zaman çalışır: GitHub'da "main" dalına her yüklemede ya da Actions sekmesinden
+# "Run workflow" ile elle.
+#
+# Ne üretir (Actions → bu çalıştırma → Artifacts):
+#   • geostrand-android-aab  → Google Play'e yüklenecek dosya (app-release.aab)
+#   • geostrand-android-apk  → Telefonuna doğrudan kurup denemek için (app-debug.apk)
+#
+# İmza için GitHub deposunda Settings → Secrets and variables → Actions'a şunları ekle
+# (değerler GITHUB-SECRETS.txt dosyasında):
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+# Bunlar yoksa da derlenir ama .aab imzasız olur (Google Play kabul etmez).
+name: Android uygulaması
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Paketleri kur
+        run: npm ci
+
+      - name: Testler
+        run: npm test
+
+      - name: Oyun dosyalarını uygulamaya kopyala
+        run: |
+          npm run build:www
+          npx cap sync android
+
+      - name: İmza anahtarını hazırla
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+            echo "İmza anahtarı bulundu: .aab imzalanacak"
+          else
+            echo "::warning::ANDROID_KEYSTORE_BASE64 yok: .aab imzasız olacak (Google Play için imza gerekir)"
+          fi
+
+      - name: Derle (AAB + APK)
+        working-directory: android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: 1.0.${{ github.run_number }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon bundleRelease assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: geostrand-android-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: geostrand-android-apk
+          path: android/app/build/outputs/apk/debug/*.apk

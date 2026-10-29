@@ -1,19 +1,36 @@
 {
   "name": "geostrand",
-  "version": "8.0.0",
+  "version": "1.0.0",
   "private": true,
   "description": "GeoStrand: Enlemden Kaçış — eğitsel coğrafya hayatta kalma oyunu (tek oyunculu + çevrim içi yarış)",
   "scripts": {
     "start": "node server/server.js",
-    "test": "node --test \"tests/*.test.js\" \"server/test/*.test.js\""
+    "test": "node --test \"tests/*.test.js\" \"server/test/*.test.js\"",
+    "vendor": "node scripts/vendor.js",
+    "build:www": "node scripts/build-www.js",
+    "app:sync": "npm run build:www && npx cap sync",
+    "app:assets": "npx capacitor-assets generate --android --ios --iconBackgroundColor \"#0f2a2e\" --iconBackgroundColorDark \"#0f2a2e\" --splashBackgroundColor \"#08181b\" --splashBackgroundColorDark \"#08181b\"",
+    "app:android": "npm run app:sync && npx cap open android",
+    "app:ios": "npm run app:sync && npx cap open ios"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.6.0",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.6.0",
+    "@capacitor/ios": "^8.6.0",
+    "@fontsource/atkinson-hyperlegible": "^5.3.0",
+    "@fontsource/bricolage-grotesque": "^5.3.0",
+    "phaser": "3.80.1",
     "socket.io-client": "^4.8.1"
   }
 }

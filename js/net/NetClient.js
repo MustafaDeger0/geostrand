@@ -24,10 +24,16 @@
   const SESSION_KEY = 'geostrand-net';
   const SERVER_EVENTS = ['room:state', 'game:starting', 'round:start', 'player:moved', 'player:solved', 'round:end', 'game:over', 'server:stats'];
 
-  /** Sunucu adresi ('' = aynı adres) */
+  /**
+   * Sunucu adresi ('' = oyunun açıldığı adres).
+   * Mobil uygulamada ve dosyadan açılınca (sunucu aynı yerde olmadığı için) NET.appServerUrl.
+   */
   function serverUrl() {
+    const N = GS.CONFIG.NET;
     const param = new URLSearchParams(window.location.search).get('sunucu');
-    const url = (param || GS.CONFIG.NET.serverUrl || '').trim().replace(/\/+$/, '');
+    let url = (param || N.serverUrl || '').trim();
+    if (!url && (GS.Native && GS.Native.isApp || window.location.protocol === 'file:')) url = N.appServerUrl || '';
+    url = url.replace(/\/+$/, '');
     return /^https?:\/\//.test(url) ? url : '';
   }
 
@@ -38,11 +44,11 @@
      */
     static load() {
       if (window.io) return Promise.resolve();
-      const base = serverUrl();
-      if (!base && window.location.protocol === 'file:') return Promise.reject(new Error('file'));
+      if (!serverUrl() && window.location.protocol === 'file:') return Promise.reject(new Error('file'));
+      // İstemci kütüphanesi oyunun içinde (js/vendor): sunucu uyurken bile hemen yüklenir
       return new Promise((resolve, reject) => {
         const s = document.createElement('script');
-        s.src = `${base}/socket.io/socket.io.js`;
+        s.src = 'js/vendor/socket.io.min.js';
         s.onload = () => (window.io ? resolve() : reject(new Error('server')));
         s.onerror = () => {
           s.remove();

@@ -77,12 +77,16 @@
       this._buildDunes(count(terrain.dunes), climate.groundColor);
       for (let i = 0; i < count(terrain.boulders); i++) this._buildBoulder();
 
+      // Yürünebilir alan haritası: ipucu ve sandık yalnızca yürüyerek ulaşılabilen yere konur
+      // (ör. plato kanyonunun öbür yakasında, dağlarla çevrili bir cepte kalmasın)
+      this._buildWalkMap();
+
       // 7) İpucu nesneleri (kademeye göre 3–5 adet)
       const treeTexture = `tree_${location.treeStyle}`;
       const ring = { minFromSpawn: this.cfg.clueMinDistance, maxFromSpawn: this.cfg.clueMaxDistance };
       const TEX = { tree: treeTexture, soil: 'soil', sunstick: 'sunstick', altimeter: 'altimeter', fauna: 'tracks' };
       const interactables = Object.values(clues).map((clue) => {
-        const p = this._reserve(clue.id === 'tree' ? 45 : 40, ring);
+        const p = this._reserve(clue.id === 'tree' ? 45 : 40, { ...ring, reachable: true });
         const obj = this._track(new GS.Interactable(scene, p.x, p.y, {
           type: clue.id,
           texture: TEX[clue.id],
@@ -99,8 +103,9 @@
 
       // Yardım sandıkları: uzakta, keşfetmeye değer
       const crateObjs = [];
+      if (crates) this._buildWalkMap(); // ipucu nesneleri de engel oldu: haritayı tazele
       for (let i = 0; i < crates; i++) {
-        const p = this._reserve(34, { minFromSpawn: 380, maxFromSpawn: 950 }, true);
+        const p = this._reserve(34, { minFromSpawn: 380, maxFromSpawn: 950, reachable: true }, true);
         if (!p) continue;
         const crate = this._track(new GS.Interactable(scene, p.x, p.y, {
           type: 'crate', texture: 'crate', prompt: 'Sandığı aç', clue: null, marker: { text: '!', color: '#ff8a3d' },
@@ -468,12 +473,95 @@
      * İpucu nesneleri için mutlaka bir yer bulunur: halka dolu ise kısıt gevşetilir.
      */
     _reserve(r, opts, optional = false) {
-      let p = this._findSpot(r, { margin: 70, ...opts });
+      let p = null;
+      if (opts.reachable && this.walk) {
+        // Yürüyerek ulaşılabilen bir nokta ara (40 deneme)
+        for (let i = 0; i < 40 && !p; i++) {
+          const q = this._findSpot(r, { margin: 70, ...opts });
+          if (!q) break;
+          if (this._isReachable(q.x, q.y + 10)) p = q;
+        }
+        if (p) {
+          this.blockers.push({ x: p.x, y: p.y, r });
+          return p;
+        }
+        if (optional) return null; // sandık: ulaşılabilir yer yoksa hiç konmaz
+      }
+      p = this._findSpot(r, { margin: 70, ...opts });
       if (!p && !optional) p = this._findSpot(r, { margin: 70, minFromSpawn: opts.minFromSpawn });
       if (!p && !optional) p = this._findSpot(r, { margin: 70, useSolids: true });
       if (!p) return null;
       this.blockers.push({ x: p.x, y: p.y, r });
       return p;
+    }
+
+    /**
+     * Yürünebilir alan haritası (16 px ızgara): statik engellerden (göl, dağ,
+     * kanyon, ağaç gövdesi…) oyuncunun gövdesi kadar pay bırakılır, sonra
+     * doğuş noktasından taşma dolgusu (flood fill) ile ulaşılabilen hücreler bulunur.
+     */
+    _buildWalkMap() {
+      const C = 16;
+      const W = this.cfg.width;
+      const H = this.cfg.height;
+      const cols = Math.ceil(W / C);
+      const rows = Math.ceil(H / C);
+      const blocked = new Uint8Array(cols * rows);
+      const pad = 9;
+      this.obstacles.getChildren().forEach((o) => {
+        const bd = o.body;
+        if (!bd || !bd.enable) return;
+        if (bd.isCircle) {
+          const cx = bd.center.x;
+          const cy = bd.center.y;
+          const r = bd.halfWidth + pad;
+          for (let gy = Math.max(0, Math.floor((cy - r) / C)); gy <= Math.min(rows - 1, Math.floor((cy + r) / C)); gy++) {
+            for (let gx = Math.max(0, Math.floor((cx - r) / C)); gx <= Math.min(cols - 1, Math.floor((cx + r) / C)); gx++) {
+              const px = gx * C + C / 2;
+              const py = gy * C + C / 2;
+              if ((px - cx) ** 2 + (py - cy) ** 2 <= r * r) blocked[gy * cols + gx] = 1;
+            }
+          }
+          return;
+        }
+        for (let gy = Math.max(0, Math.floor((bd.y - 4) / C)); gy <= Math.min(rows - 1, Math.floor((bd.bottom + 4) / C)); gy++) {
+          for (let gx = Math.max(0, Math.floor((bd.x - pad) / C)); gx <= Math.min(cols - 1, Math.floor((bd.right + pad) / C)); gx++) {
+            blocked[gy * cols + gx] = 1;
+          }
+        }
+      });
+      const seen = new Uint8Array(cols * rows);
+      const start = Math.floor(this.spawn.y / C) * cols + Math.floor(this.spawn.x / C);
+      const stack = [start];
+      seen[start] = 1;
+      while (stack.length) {
+        const c = stack.pop();
+        const cx = c % cols;
+        const cy = (c / cols) | 0;
+        if (cx > 1) visit(c - 1);
+        if (cx < cols - 2) visit(c + 1);
+        if (cy > 1) visit(c - cols);
+        if (cy < rows - 2) visit(c + cols);
+      }
+      function visit(n) {
+        if (!seen[n] && !blocked[n]) {
+          seen[n] = 1;
+          stack.push(n);
+        }
+      }
+      this.walk = { C, cols, rows, seen };
+    }
+
+    /** Bu noktanın etkileşim menzilinde yürüyerek ulaşılabilen bir hücre var mı? */
+    _isReachable(x, y) {
+      const { C, cols, rows, seen } = this.walk;
+      const range = GS.CONFIG.PLAYER.interactRange * 0.8;
+      for (let gy = Math.max(0, Math.floor((y - range) / C)); gy <= Math.min(rows - 1, Math.floor((y + range) / C)); gy++) {
+        for (let gx = Math.max(0, Math.floor((x - range) / C)); gx <= Math.min(cols - 1, Math.floor((x + range) / C)); gx++) {
+          if (seen[gy * cols + gx] && Math.hypot(gx * C + C / 2 - x, gy * C + C / 2 - y) <= range) return true;
+        }
+      }
+      return false;
     }
 
     _insideAny(list, x, y, r) {

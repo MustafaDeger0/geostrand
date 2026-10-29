@@ -15,9 +15,8 @@
   <link rel="icon" href="favicon.ico" sizes="48x48">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="manifest" href="site.webmanifest">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap" rel="stylesheet">
+  <!-- Yazı tipleri ve kütüphaneler projenin içinde: internet olmadan da çalışır (uygulama için şart) -->
+  <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -145,7 +144,7 @@
         <span class="pad-logo" aria-hidden="true">🧭</span>
         <h2 id="pad-title">Coğrafyacı Pad'i</h2>
         <span class="pad-location" id="pad-location">Bölge 1</span>
-        <button type="button" class="pad-guide" id="pad-guide">📖 Rehber</button>
+        <button type="button" class="pad-guide" id="pad-guide" aria-label="Rehber">📖<span class="pad-guide-text"> Rehber</span></button>
         <button type="button" class="pad-close" id="pad-close" aria-label="Pad'i kapat (Esc)">✕</button>
       </header>
 
@@ -250,7 +249,7 @@
       </div>
       <div class="creator-form">
         <h2 id="creator-title">Kâşifini hazırla</h2>
-        <label class="name-field"><span>Adı</span><input type="text" id="creator-name" maxlength="14" autocomplete="off" spellcheck="false"></label>
+        <label class="name-field"><span>Adı <small class="name-tip">Çevrim içi yarışta diğer oyuncular bu adı görür. Gerçek tam adını yazma.</small></span><input type="text" id="creator-name" maxlength="14" autocomplete="off" spellcheck="false"></label>
         <div id="creator-options"></div>
         <div class="creator-actions">
           <button type="button" class="btn-ghost" id="creator-random">🎲 Rastgele</button>
@@ -478,10 +477,11 @@
   </div>
 
   <!-- ================= SCRIPTLER (sıra önemli) ================= -->
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+  <script src="js/vendor/phaser.min.js"></script>
 
   <!-- 1) Çekirdek ve veri -->
   <script src="js/core/Device.js"></script>
+  <script src="js/core/Native.js"></script>
   <script src="js/core/EventBus.js"></script>
   <script src="js/core/Config.js"></script>
   <script src="js/core/SeededRandom.js"></script>
@@ -532,6 +532,7 @@
   <script src="js/ui/IntroCutscene.js"></script>
   <script src="js/ui/RaceHUD.js"></script>
   <script src="js/ui/Lobby.js"></script>
+  <script src="js/ui/Moderation.js"></script>
 
   <!-- 5b) Çevrim içi bağlantı (Socket.IO betiği sunucudan, gerektiğinde yüklenir) -->
   <script src="js/net/NetClient.js"></script>

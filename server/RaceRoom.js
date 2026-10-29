@@ -32,6 +32,7 @@ const { CLIMATE_WEATHER } = require('../js/data/weather.js');
 const { PredictionEvaluator } = require('../js/logic/PredictionEvaluator.js');
 const { LocationManager } = require('../js/logic/LocationManager.js');
 const { WeatherPicker } = require('../js/logic/Progression.js');
+const { safeName } = require('./nameFilter.js');
 
 const R = CONFIG.RACE;
 const TIERS = CONFIG.PROGRESSION.tiers;
@@ -46,7 +47,7 @@ const defaultClock = {
 /** Oyuncu adını temizle: kontrol karakterleri yok, en fazla 14 harf */
 function cleanName(name) {
   const s = String(name || '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 14);
-  return s || 'Kâşif';
+  return s ? safeName(s) : 'Kâşif';   // uygunsuz ad: "Kâşif 37" olur
 }
 
 /** Görünüm: yalnızca bilinen alanlar, kısa metinler (karakter çizicisi gerisini düzeltir) */
@@ -381,6 +382,27 @@ class RaceRoom {
   pointsFor(rank, wrongs) {
     const base = R.rankPoints[rank - 1] ?? R.minPoints;
     return Math.max(R.floorPoints, base - wrongs * R.wrongPenalty);
+  }
+
+  /**
+   * Oyuncu şikâyeti (uygunsuz ad). Odadaki farklı iki kişi (oda 2 kişiyse bir kişi)
+   * şikâyet ederse adı "Kâşif 37" gibi bir adla değiştirilir.
+   * @returns {{ok:boolean, renamed?:boolean}|{error:string}}
+   */
+  report(reporterId, targetId) {
+    const target = this.players.get(String(targetId || ''));
+    if (!target || reporterId === target.id || !this.players.has(reporterId)) return { error: 'Oyuncu bulunamadı.' };
+    target.reports = target.reports || new Set();
+    target.reports.add(reporterId);
+    const others = [...this.players.values()].filter((p) => p.id !== target.id && p.connected).length;
+    const needed = Math.max(1, Math.min(2, others));
+    if (target.reports.size >= needed && !target.renamed) {
+      target.renamed = true;
+      target.name = this._uniqueName(`Kâşif ${10 + Math.floor(this.rng() * 90)}`);
+      this.broadcastState();
+      return { ok: true, renamed: true };
+    }
+    return { ok: true, renamed: false };
   }
 
   /** Kaç ipucu buldu (sıralama tablosunda 🔍 2/4 olarak görünür) */

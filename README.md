@@ -17,6 +17,31 @@ oyuncularla "kim daha hızlı bilecek?" (hızlı eşleşme ya da oda koduyla).
 
 ---
 
+## Çalıştırma
+
+1. Klasörü açın, `index.html` dosyasına çift tıklayın (Chrome / Edge / Firefox).
+2. **Göreve başla** düğmesine veya **Enter** tuşuna basın. İlk oyunda **Kâşifini hazırla** ekranı açılır
+   (ad, ten rengi, saç modeli/rengi, şapka, ceket, çanta), ardından **açılış animasyonu** oynar (Esc / "Geç" ile atlanır).
+   Oyun tüm pencereyi kaplar; **F** ile tam ekrana geçer. Esc menüsündeki **🏠 Ana menü** başlık ekranına döndürür.
+
+> Oyun motoru (Phaser), yazı tipleri ve çevrim içi kütüphanesi projenin içindedir (`js/vendor/`, `fonts/`):
+> tek oyunculu mod **internetsiz** çalışır.
+
+## 📱 Mobil Uygulama (App Store · Google Play)
+
+Proje aynı zamanda bir **Android ve iOS uygulaması**dır (Capacitor 8). Uygulama, oyunun dosyalarını telefonun içinde
+taşır; çevrim içi yarışta `Config.js → NET.appServerUrl` adresindeki sunucuya (Render) bağlanır.
+
+| Uygulamaya özel | |
+|---|---|
+| Android geri tuşu | Açık pencereyi kapatır → oyunda menüyü açar → başlık ekranında uygulamadan çıkar |
+| Arka plana alınınca | Tek oyunculu oyun duraklar (menü açılır), ses susar; geri gelince ses açılır |
+| Ekran | Durum çubuğu gizli, çentik/kenar güvenli alanları korunur, dikey ve yatay |
+| Mağaza şartları | Gizlilik politikası (`gizlilik.html`), uygunsuz ad süzgeci, oyuncu gizle/şikâyet et |
+
+Bilgisayarında Android Studio ya da Mac gerekmez: Android GitHub Actions'ta, iOS Codemagic'te bulutta derlenir.
+**Adım adım yükleme: [MAGAZA-REHBERI.md](MAGAZA-REHBERI.md)** · mağaza metinleri ve ekran görüntüleri: `store/`.
+
 ## 🌍 Çevrim İçi Yarış
 
 Başlık ekranında **🌍 Çevrim içi yarış** → üç yol:
@@ -50,6 +75,34 @@ oyun dosyalarını sunar (sunucu kodu ve ayar dosyaları kapalıdır). Not: Hari
 gönderilir; tarayıcının geliştirici araçlarını bilen biri cevabı görebilir. Sınıf/arkadaş yarışı için bu kabul edilebilir bir
 sınırdır; puanı yine de sunucu verir.
 
+## 🚀 Çevrim İçi Yayın (Render.com, ücretsiz)
+
+Oyunun internetteki adresi hem oyunu hem çevrim içi sunucuyu taşır; herkes yalnızca bu adresi açar.
+
+**1. Kodu GitHub'a koy** (bir kez)
+1. [github.com](https://github.com) → ücretsiz hesap → sağ üstte **+ → New repository** → ad: `geostrand` → **Create repository**.
+2. Açılan sayfada **uploading an existing file** bağlantısına tıkla.
+3. Zip'ten çıkan `geostrand` klasörünün **içindekileri** (index.html, package.json, render.yaml, css/, js/, server/, tests/…)
+   sürükleyip bırak → **Commit changes**. (`node_modules` klasörü varsa yükleme; Render kendisi kurar.)
+
+**2. Render'da yayınla** (bir kez)
+1. [render.com](https://render.com) → **Get Started** → GitHub hesabınla giriş yap.
+2. **New + → Blueprint** → `geostrand` deposunu seç → **Apply**. (`render.yaml` her ayarı hazır getirir.)
+   *Elle kurmak istersen:* **New + → Web Service** → depo → Runtime **Node**, Build Command `npm install --omit=dev`,
+   Start Command `npm start`, Instance Type **Free** → **Create Web Service**.
+3. 2-3 dakika sonra adresin hazır: `https://geostrand-xxxx.onrender.com`. Bu adresi herkesle paylaş.
+
+**Bilmen gerekenler**
+- **Ücretsiz sunucu uyur:** 15 dakika kimse oynamazsa uykuya geçer; sonraki ilk açılış **30-60 sn** sürer (lobi
+  "Sunucu uyanıyor…" yazar). Ders/sunum öncesinde adresi bir kez açıp uyandırman yeterli.
+- **Güncelleme:** GitHub'daki dosyaları değiştirince Render kendiliğinden yeniden yayınlar.
+- **Sunucu tek bölgede** çalışır (Render'da kurarken seçilir; Türkiye için **Frankfurt** önerilir). Başka kıtadan
+  oynayanlar biraz daha gecikme yaşar ama sırayı ve süreyi sunucu ölçtüğü için yarış adil kalır.
+- **Kendi bilgisayarında denemek:** Node.js 18+ kur → klasörde `npm install` → `npm start` → `http://localhost:3000`
+  (aynı Wi-Fi'daki cihazlar ekranda yazan `http://192.168.x.x:3000` adresini açar).
+- **Oyunu başka yerde (ör. GitHub Pages) yayınlarsan:** `js/core/Config.js` → `NET.serverUrl` alanına Render adresini yaz
+  ya da oyunu `…/index.html?sunucu=https://geostrand-xxxx.onrender.com` ile aç.
+- `index.html` dosyasını çift tıklayarak açınca yalnızca tek oyunculu mod çalışır (çevrim içi için sunucu gerekir).
 
 ## Telefon ve Tablet
 
@@ -86,6 +139,140 @@ Sağ alttaki eylem çubuğu (Pad, ses, tam ekran, menü) fareyle de kullanılır
 
 ---
 
+## Klasör Yapısı ve Mimari
+
+Kod iki katmana ayrılmıştır. **Mantık katmanı Phaser'ı hiç tanımaz**; bu yüzden oyun kuralları
+tarayıcı açmadan Node.js ile test edilebilir ve başka bir motora (Unity, Godot) taşınabilir.
+Çevrim içi sunucu da **aynı mantık dosyalarını** (konumlar, değerlendirici, kademeler) kullanır: oyunun ve sunucunun
+"doğru cevap" kararı hiçbir zaman farklılaşmaz.
+
+```
+geostrand/
+├── index.html                  HTML iskeleti: oyun tuvali, HUD, Pad, menü, ekranlar
+├── css/style.css               Tüm arayüz stilleri (renkler :root değişkenlerinde)
+├── js/
+│   ├── core/
+│   │   ├── Device.js           Dokunmatik mi klavye mi? (metinler ve düğmeler buna göre)
+│   │   ├── SeededRandom.js     Tohumlu rastgele sayı: aynı tohum = aynı harita (çevrim içi)
+│   │   ├── Native.js           Mobil uygulama köprüsü: geri tuşu, arka plan, durum çubuğu
+│   │   ├── EventBus.js         Modüller arası olay sistemi + olay adları (EVENTS)
+│   │   └── Config.js           TÜM denge sayıları (hızlar, bonus, ceza, gün uzunluğu)
+│   ├── data/
+│   │   ├── climates.js         6 iklim: oyun çarpanları + zemin + arazi + ortam sesi
+│   │   ├── locations.js        19 gerçek konum: iklim, yer şekli, yükselti, kıta, ipuçları
+│   │   ├── landforms.js        Yer şekilleri (ova/plato/dağ) + kıtalar: harita etkisi + rehber
+│   │   ├── weather.js          5 hava olayı: bar etkisi, görsel, "neden olur?"
+│   │   └── musicThemes.js      Her iklimin müzik tarifi (dizi, tempo, akorlar, enstrüman)
+│   ├── logic/                  ◀ SAF MANTIK (Phaser yok, test edilebilir)
+│   │   ├── SurvivalSystem.js   Can / Su / Vücut Isısı algoritması
+│   │   ├── DayNightCycle.js    Saat ve ışık seviyesi hesabı
+│   │   ├── PredictionEvaluator.js  Tahmin doğru mu? + öğretici geri bildirim
+│   │   ├── ClueFactory.js      İpucu metinleri + güneş çubuğu gölge hesabı
+│   │   ├── Inventory.js        Eşya adetleri
+│   │   ├── LocationManager.js  Seviye sırası (karıştırılmış, aynı iklim arka arkaya gelmez)
+│   │   └── Progression.js      Kademeler, puan/yıldız (ScoreKeeper), hava seçimi
+│   ├── render/
+│   │   └── CharacterRenderer.js  Kâşif çizimi: 4 yön × 4 kare yürüme (oyun + önizleme ortak)
+│   ├── game/                   ◀ PHASER KATMANI (çizim, fizik, girdi)
+│   │   ├── entities/Player.js        Top-down hareket
+│   │   ├── entities/Interactable.js  Ağaç / toprak / güneş çubuğu
+│   │   ├── systems/InteractionSystem.js  En yakın nesne + E tuşu / İncele düğmesi
+│   │   ├── systems/TouchControls.js  Dokunmatik: kaydır (joystick) ya da dokunduğun yere yürü
+│   │   ├── systems/Ghosts.js         Çevrim içi rakiplerin kâşifleri (yumuşak hareket, ad, madalya)
+│   │   ├── scenes/RaceScene.js       Çevrim içi yarış (GameScene'den türer)
+│   │   ├── systems/TerrainPainter.js Zemin dokusu, dağ, göl, nehir, köprü, kum tepesi çizer
+│   │   ├── systems/WorldBuilder.js   Konumdan harita kurar / yıkar (yerleşim + çarpışma)
+│   │   ├── systems/LightingOverlay.js Gece karartması + fener ışığı
+│   │   ├── systems/WeatherFX.js      Yağmur / kar / kum parçacıkları + pus
+│   │   ├── scenes/BootScene.js       Görselleri kodla üretir (resim dosyası yok)
+│   │   ├── scenes/GameScene.js       Orkestra şefi: modülleri bağlar, oyun döngüsü
+│   ├── audio/                  ◀ SES (Web Audio, dosyasız)
+│   │   ├── AudioEngine.js      Kanallar, kompresör, yankı, efektler, ayarlar
+│   │   ├── MusicGenerator.js   İklime göre canlı üretilen arka plan müziği
+│   │   └── AmbientLayer.js     Rüzgâr, yağmur, su, kuş, böcek, ayak sesi
+│   ├── ui/                     ◀ HTML/DOM ARAYÜZÜ
+│   │   ├── HUD.js              Barlar, görev, saat, çanta, eylem çubuğu, hayati durum efektleri
+│   │   ├── GeographerPad.js    Pop-up form + sonuç şeridi, soruların yanında ✔/✘
+│   │   ├── PauseMenu.js        Duraklatma, ses ayarları, nasıl oynanır
+│   │   ├── OffscreenIndicators.js  Ekran dışındaki ipuçlarını gösteren kenar okları
+│   │   ├── CharacterCreator.js "Kâşifini hazırla" ekranı (canlı önizlemeli)
+│   │   ├── IntroCutscene.js    4 sahnelik hikâye girişi (altyazı, ses, geç düğmesi)
+│   │   ├── Lobby.js            Çevrim içi: hızlı eşleşme, oda kur / katıl, oyuncular, ayarlar
+│   │   ├── RaceHUD.js          Süre, canlı sıralama, geri sayım, tur sonucu, kürsü
+│   │   ├── Moderation.js       Oyuncuyu gizle / uygunsuz adı şikâyet et
+│   │   └── Guide.js            Rehber: nasıl oynanır, iklimler, yer şekilleri, kıtalar, hava
+│   ├── net/
+│   │   └── NetClient.js        Sunucuyla konuşma (Socket.IO), otomatik yeniden bağlanma
+│   └── main.js                 Oyunu başlatır (tek oyunculu ya da çevrim içi yarış)
+├── server/                     ◀ ÇEVRİM İÇİ SUNUCU (Node.js + Socket.IO)
+│   ├── server.js               Oyun dosyalarını sunar + odalar, hızlı eşleşme, hız sınırı
+│   ├── RaceRoom.js             Yarış kuralları: turlar, sunucu tarafı cevap/süre/puan, şikâyet
+│   ├── nameFilter.js           Uygunsuz ad süzgeci (Türkçe + İngilizce, harf oyunlarına dayanıklı)
+│   └── test/                   Oda kuralları + gerçek ağ üzerinden botlarla uçtan uca test
+├── android/  ios/              ◀ MOBİL UYGULAMA projeleri (Capacitor; simgeler ve açılış ekranı dahil)
+├── assets/                     Uygulama simgesi ve açılış ekranının kaynak görselleri
+├── store/                      Mağaza metinleri, ekran görüntüleri, öne çıkan görsel
+├── scripts/                    vendor.js (kütüphaneleri kopyalar) · build-www.js (uygulama dosyaları)
+├── js/vendor/  fonts/          Phaser, Socket.IO istemcisi, yazı tipleri (internetsiz çalışma)
+├── gizlilik.html               Gizlilik politikası (mağazalar için)
+├── capacitor.config.json       Uygulama kimliği, adı, açılış ekranı ayarları
+├── .github/workflows/android.yml  Android'i bulutta derler (.aab + .apk)
+├── codemagic.yaml              iOS'u (ve isteğe bağlı Android'i) bulutta derler
+├── MAGAZA-REHBERI.md           App Store ve Google Play'e yükleme rehberi
+├── package.json                npm start (sunucu) · npm test (tüm testler) · npm run app:sync (uygulama)
+├── render.yaml                 Render.com tek tık kurulum ayarı
+└── tests/logic.test.js         30 birim testi →  node --test tests/logic.test.js
+```
+
+### Modüller nasıl haberleşir? (EventBus)
+
+Modüller birbirini doğrudan çağırmaz; olay yayar ve dinler. `GameScene._bindEvents()` tüm akışı tek yerde gösterir:
+
+```
+[E tuşu] InteractionSystem ──INTERACT──▶ GameScene ──▶ Pad.open(ipucu)
+Pad formu ──PREDICTION_SUBMIT──▶ GameScene ──▶ PredictionEvaluator.evaluate()
+                                     ├─ doğru ▶ Inventory.add() + Survival.clearPenalty()
+                                     └─ yanlış ▶ Survival.startPenalty()
+SurvivalSystem ──PLAYER_DIED──▶ GameScene ──▶ HUD.showGameOver()
+```
+
+---
+
+## Sistemler ve Algoritmalar
+
+### 1. Karakter Hareketi ve Etkileşim
+- `Player.tick()`: Tuşlardan yön vektörü oluşur, **normalize edilir** (çaprazda %41 hızlanma olmaz), karakter yöne döner.
+  Derinlik = y koordinatı, böylece oyuncu ağacın önünden/arkasından doğru geçer.
+- `InteractionSystem.update()`: Menzil içindeki (60 px) **en yakın** nesneyi bulur, üstünde `[E] ...` balonu gösterir,
+  E'ye basılınca `INTERACT` olayını yayar. İncelenen nesnenin `?` işareti `✓` olur.
+
+### 2. Coğrafyacı Pad'i ("az yazı, çok görsel")
+- Sol: **3 sabit gözlem kartı** (Bitki · Toprak · Gölge). Bulunmayan kart soluk ve kesik çizgili kalır, öğrenci neyin eksik olduğunu bir bakışta görür.
+  Bulunan kart **3 renkli etiket + tek kısa cümle** gösterir. Gölge kartında, gölgenin **yönünü ve uzunluğunu çizen küçük bir pusula şeması** vardır.
+- Açılır **"Gölgeden enlem bul"** cetveli: gölge uzunluğu ↔ enlem karşılığı tek satırda.
+- Sağ: ① **Yarım Küre** ② **İklim** (6 seçenek, `climates.js`'ten otomatik üretilir) ③ **Enlem** (0°–90° kaydırıcı).
+- Sonuç **kaydırmadan** görülür:
+  - Pad'in altındaki şerit hep görünür: "✘ 2/3 doğru" + yanlış soruların adları, doğruysa ⭐ yıldız, gerçek konum ve "Sonraki bölgeye uç".
+  - **Her soru kendi yerinde** yeşil ✔ / kırmızı ✘ çerçeve alır, yanlış sorunun hemen altında o soruya özel ipucu yazar
+    (enlem için ↑/↓ yön oku). İlk yanlış soru görünmüyorsa Pad oraya kendiliğinden kayar. Boş bırakılan sorular turuncu işaretlenir.
+  - Öğrenci yanlış soruyu değiştirince o sorunun işareti kalkar.
+- Pad açıkken zaman **¼ hızda** akar (`CONFIG.PAD.timeScale`), oyuncu durur, Phaser klavyesi susturulur.
+
+### 3. Hayatta Kalma Bar Algoritması (`SurvivalSystem.update`)
+
+Her karede, `dt` saniye için:
+
+```
+cezaÇarpanı  = ceza aktifse 2, değilse 1
+ısıÇarpanı   = lerp(iklim.gündüzIsı, iklim.geceIsı, gecelikOranı)
+
+Su   -= 0.6 × iklim.suÇarpanı × cezaÇarpanı × dt
+Isı  -= 0.5 × ısıÇarpanı      × cezaÇarpanı × dt
+
+Su veya Isı = 0   →  HP -= 5 × (tükenen bar sayısı) × dt
+Su ≥ 50 ve Isı ≥ 50 →  HP += 1.5 × dt
+HP = 0            →  Oyun biter
+```
 
 | Tahmin | Sonuç |
 |---|---|
@@ -301,3 +488,29 @@ Kuzey Yarım Küre'de gölge kuzeye (ekranda yukarı), Güney'de güneye düşer
 Aynı iklimin farklı yarım küre ve kıtalarda görülmesi bilinçlidir: öğrenci "iklim aynı olsa da yarım küre ve kıta farklı olabilir" fikrini deneyimler.
 
 ---
+
+## Genişletme Rehberi
+
+- **Yeni konum (seviye):** `js/data/locations.js` dizisine bir nesne ekleyin (iklim, yer şekli, yükselti, kıta, ağaç/toprak/hayvan ipuçları:
+  her biri 3 etiket + en fazla 6 kelimelik cümle). Testler yer şekli–yükselti tutarlılığını da denetler (ova ≤ 300 m, plato ≥ 500 m, dağ ≥ 1000 m).
+- **Yeni kademe:** `Config.js → PROGRESSION.tiers` dizisine ekleyin (hangi bölgeden itibaren, hangi sorular, hangi ipuçları, zorluk).
+- **Yeni iklim tipi:** `js/data/climates.js`'e ekleyin (oyun çarpanları, zemin renkleri, `terrain`, `audio`); Pad'deki seçenek kendiliğinden belirir.
+- **Oyun dengesi:** Yalnızca `js/core/Config.js` (bonus miktarı, ceza çarpanı/süresi, gün uzunluğu, hızlar, kamera).
+- **Müziği değiştirmek:** `js/data/musicThemes.js` → tempo, dizi, akorlar, enstrüman ve yoğunluklar. Kod değişikliği gerekmez.
+- **Kendi çizimleriniz:** `BootScene` içinde `this.load.image('player', 'assets/player.png')` kullanın; anahtar adları aynı kalırsa başka değişiklik gerekmez.
+- **Çarpışma kutularını görmek:** `main.js` → `arcade: { debug: true }`.
+
+## Testler
+
+```bash
+npm install     # bir kez (sunucu testleri için)
+npm test        # tüm testler
+```
+**Oyun mantığı** (`tests/logic.test.js`): hayatta kalma formülü (2× ceza dahil), +50 bonusun 100'de sınırlanması, ölüm olayı, gece/gündüz ışığı,
+tahmin değerlendirme (yer şekli ve kıta dahil), kademeler, puan/yıldız, hava seçimi, aynı iklimin arka arkaya gelmemesi,
+gölge hesabı, coğrafi veri tutarlılığı ve tohumlu rastgele sayı (aynı tohum = aynı harita).
+
+**Sunucu** (`server/test/`): sahte saatle oda kuralları (kurucu yetkisi, geri sayımda tahmin yok, sıra/süre/puan,
+yanlış tahmin kilidi, yanlışta cevap sızmaması, süre dolması, kademeli zorluk, kuruculuk devri, yeniden bağlanma,
+hızlı odanın kendiliğinden başlaması, ad/tahmin temizliği) ve gerçek ağ üzerinden botlarla uçtan uca: özel oda,
+hızlı eşleşme, yeniden bağlanma, hız sınırı, gizli dosyaların sunulmaması.

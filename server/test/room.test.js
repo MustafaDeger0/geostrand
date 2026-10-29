@@ -220,3 +220,15 @@ test('güvenlik: ad temizlenir, aynı ad numaralanır, tahmin alanları süzül�
   assert.equal(g.climate, undefined);
   assert.equal(g.latitude, 45);
 });
+
+test('uygunsuz ad süzülür; iki şikâyetle ad değişir', () => {
+  const { room } = makeRoom();
+  assert.match(room.addPlayer({ name: 's1kt1r' }).player.name, /^Kâşif \d+/);
+  assert.equal(room.addPlayer({ name: 'Işık' }).player.name, 'Işık');
+  const bad = room.addPlayer({ name: 'Rahatsız' }).player;
+  const ids = [...room.players.keys()];
+  assert.equal(room.report(ids[0], bad.id).renamed, false, 'tek şikâyet yetmez (3 kişilik oda)');
+  assert.ok(room.report(ids[0], ids[0]).error, 'kendini şikâyet edemez');
+  assert.equal(room.report(ids[1], bad.id).renamed, true);
+  assert.match(room.players.get(bad.id).name, /^Kâşif \d+/);
+});

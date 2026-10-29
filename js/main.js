@@ -94,7 +94,16 @@
         height: window.innerHeight,
       },
       input: { activePointers: 3 },   // dokunmatik: joystick + düğmeler aynı anda
+      // Yavaş cihazda da oyun gerçek hızda aksın: Phaser açılışta 120 kare boyunca zamanı
+      // 60 fps'ye göre kısıyordu (30 fps'lik telefonda ilk 4 sn yarı hız). Kısa tutulur.
+      fps: { panicMax: 10 },
       scene: [GS.BootScene, GS.GameScene, GS.RaceScene],
+    });
+    // Pencere görünür ama odakta değilken (projeksiyon, başka pencereye tıklama) Phaser zamanı
+    // yine kısar ve oyun ağır çekime girer. Sekme gerçekten gizlenince Phaser oyunu zaten
+    // duraklattığı için, odak kaybında kısma kapatılır.
+    GS.game.events.on(Phaser.Core.Events.BLUR, () => {
+      GS.game.loop.inFocus = true;
     });
   }
 
@@ -148,6 +157,7 @@
   // ------------------------------------------------------------------ //
   const AUTO_QUICK = 'geostrand-auto-quick';
   GS.lobby = new GS.Lobby(document, { onStart: () => launch(false, 'RaceScene') });
+  GS.mod = new GS.Moderation(document);
   const netMsg = document.getElementById('intro-net-msg');
 
   function showNetError(kind) {
@@ -192,6 +202,52 @@
   if (autoQuick) startRace({ quickMatch: true });
   else if (GS.lobby.pendingCode || GS.NetClient.hasSession()) document.getElementById('btn-race').classList.add('pulse');
 
+  // ------------------------------------------------------------------ //
+  //  Mobil uygulama: geri tuşu ve arka plana alınma (Native.js çağırır)
+  // ------------------------------------------------------------------ //
+  /** Şu an çalışan oyun sahnesi (tek oyunculu ya da yarış) */
+  function activeScene() {
+    if (!GS.game) return null;
+    return ['RaceScene', 'GameScene'].map((k) => GS.game.scene.getScene(k)).find((s) => s && s.sys.isActive() && s.world) || null;
+  }
+
+  /** Android geri tuşu: en üstteki pencereyi kapat; yoksa menü; başlıkta çıkış */
+  GS.handleBack = function handleBack() {
+    const hidden = (id) => document.getElementById(id).classList.contains('hidden');
+    if (GS.cutscene.isPlaying) return GS.cutscene.skip();
+    if (GS.creator.isOpen) return GS.creator.close(false);
+    if (GS.guide.isOpen) return GS.guide.close();
+    if (GS.lobby.isOpen) {
+      if (GS.lobby.view === 'choose') GS.lobby.close();
+      else document.getElementById(GS.lobby.view === 'quick' ? 'quick-cancel' : 'lobby-leave').click();
+      return undefined;
+    }
+    const scene = activeScene();
+    if (scene) {
+      if (!hidden('gameover')) return GS.returnToMainMenu();
+      if (scene.pad.isOpen) return scene.pad.close();
+      if (scene.menu.isOpen) return scene.menu.close();
+      if (!hidden('race-final')) return GS.returnToMainMenu();
+      return scene.bus.emit(GS.EVENTS.UI_MENU);
+    }
+    return GS.Native.exit();
+  };
+
+  /** Uygulama/sekme arka plana: ses sussun, tek oyunculuda oyun dursun (menü açılır) */
+  GS.onAppPause = function onAppPause() {
+    GS.audio.pause();
+    const scene = activeScene();
+    if (scene && scene.scene.key === 'GameScene' && !scene.cinematic && !scene.survival.isDead
+      && !scene.menu.isOpen && !scene.traveling) {
+      scene.pad.close();
+      scene.menu.open();
+    }
+  };
+
+  GS.onAppResume = function onAppResume() {
+    GS.audio.resume();
+  };
+
   document.getElementById('btn-start').addEventListener('click', start);
   document.getElementById('btn-full').addEventListener('click', () => GS.toggleFullscreen());
   document.getElementById('btn-guide').addEventListener('click', () => GS.guide.open('play'));
@@ -205,4 +261,7 @@
     if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') start();
     if (e.key === 'f' || e.key === 'F') GS.toggleFullscreen();
   });
+
+  // Uygulamada açılış ekranını (splash) kaldır: başlık ekranı hazır
+  GS.Native.ready();
 })(window.GS = window.GS || {});

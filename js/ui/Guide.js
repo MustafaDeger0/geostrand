@@ -27,6 +27,7 @@
     { key: 'landforms', label: '⛰️ Yer şekilleri' },
     { key: 'continents', label: '🌍 Kıtalar' },
     { key: 'weather', label: '🌪️ Hava olayları' },
+    { key: 'about', label: 'ℹ️ Hakkında' },
   ];
 
   class Guide {
@@ -82,6 +83,25 @@
     // ------------------------------------------------------------------ //
     //  Sekme içerikleri
     // ------------------------------------------------------------------ //
+    _about() {
+      const v = GS.APP_VERSION || '1.0.0';
+      // Uygulamada internetteki sayfa (telefonun tarayıcısında açılır), web'de yerel sayfa
+      const privacy = GS.Native && GS.Native.isApp ? `${GS.CONFIG.NET.appServerUrl}/gizlilik.html` : 'gizlilik.html';
+      return `
+        <h3 style="margin-top:0">GeoStrand: Enlemden Kaçış</h3>
+        <p class="lead-sm">Sürüm ${v} · Eğitsel coğrafya hayatta kalma oyunu</p>
+        <p>Çevrendeki bitki örtüsünü, toprağı, güneşin gölgesini, yükseltiyi ve hayvan izlerini okuyarak yarım küreyi,
+          iklimi, enlemi, yer şeklini ve kıtayı bul. 19 gerçek konum, 6 iklim, 3 yer şekli, 6 kıta.</p>
+        <h3>Gizlilik</h3>
+        <p>Hesap, reklam ya da izleme yok. Kâşifin, en iyi puanın ve ses ayarların yalnızca bu cihazda saklanır.
+          Çevrim içi yarışta yalnızca seçtiğin takma ad ve kâşif görünümün, oda açıkken diğer oyunculara gösterilir.
+          Başka bir oyuncunun adına dokunarak onu gizleyebilir ya da şikâyet edebilirsin.</p>
+        <p><a href="${privacy}" target="_blank" rel="noopener">Gizlilik politikasının tamamı</a></p>
+        <h3>Teşekkürler</h3>
+        <p>Oyun motoru: Phaser (MIT) · Çevrim içi: Socket.IO (MIT) · Yazı tipleri: Atkinson Hyperlegible ve
+          Bricolage Grotesque (SIL Open Font License) · Görseller, müzik ve sesler kodla üretilmiştir.</p>`;
+    }
+
     _story() {
       return `
         <p class="lead-sm"><b>Yıl 2080.</b> Dünya genelinde ani iklim kaymaları ve olağandışı hava olayları baş göstermiştir.
