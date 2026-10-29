@@ -162,7 +162,7 @@
      * Adres çubuğunda ?sunucu=https://... ile de geçici olarak değiştirilebilir.
      */
     NET: {
-      serverUrl: '',
+      serverUrl: 'https://geostrand.onrender.com',
       // Mobil uygulama (App Store / Google Play) ve dosyadan açılan oyun bu sunucuya bağlanır.
       // Render adresiniz farklıysa burayı değiştirin.
       appServerUrl: 'https://geostrand.onrender.com',
