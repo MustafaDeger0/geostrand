@@ -492,6 +492,8 @@
         this.worldBuilder.prepare(location);
         this.world = GS.SeededRandom.run(seed, build);
       }
+      // Sabit çizimleri resme dönüştür (her karede yeniden çizilmesin → kasma olmaz)
+      this.worldBuilder.bake();
       this.worldCollider = this.physics.add.collider(this.player, this.world.obstacles);
       this.interaction.setTargets([...this.world.interactables, ...this.world.crates]);
       this.levelSolved = false;

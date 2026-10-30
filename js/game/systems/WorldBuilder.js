@@ -185,7 +185,8 @@
         destroy() {
           scene.tweens.killTweensOf(shines);
           obstacles.destroy(false);
-          created.forEach((obj) => obj.destroy());
+          // Ters sırayla: önce resimler, en son onların ortak dokuları (bake) silinir
+          for (let i = created.length - 1; i >= 0; i--) created[i].destroy();
         },
       };
     }
@@ -377,6 +378,9 @@
       peaks.sort((p, q) => p.y - q.y).forEach((p) => {
         const g = this._track(this.scene.add.graphics().setDepth(p.y + p.r * 0.4));
         TP().drawMountain(g, p.x, p.y, p.r, style);
+        // bake() bu kutuyu resme dönüştürür (gölge ve yamaçlar kutunun içinde kalır)
+        const half = Math.ceil(p.r * 1.42);
+        g.bakeBox = { x: Math.floor(p.x - half), y: Math.floor(p.y - half), w: half * 2, h: half * 2 };
         this._addCircleBlocker(p.x, p.y, p.r * 0.8);
         this.blockers.push({ x: p.x, y: p.y, r: p.r + 40 });
         this.solids.push({ x: p.x, y: p.y, r: p.r + 6 });
@@ -596,6 +600,74 @@
 
     _insideAny(list, x, y, r) {
       return list.some((b) => Math.hypot(x - b.x, y - b.y) < r + b.r);
+    }
+
+    /**
+     * PERFORMANS: Haritadaki çizimleri bir kez resme dönüştür ("pişir").
+     *
+     * Göller, nehirler, kanyonlar, tarlalar ve dağlar Phaser "Graphics" ile çizilir.
+     * Graphics her karede binlerce şekli (bir haritada 10.000–20.000 komut) baştan
+     * üçgenlere böler; bu, işlemciyi her karede yorar ve hava olayı / gece efektiyle
+     * birleşince zayıf cihazlarda kasmaya yol açıyordu. Bu çizimler hiç değişmediği
+     * için harita kurulunca bir kez dokuya çizilir; oyun boyunca yalnızca o doku
+     * gösterilir (birkaç dörtgen).
+     *
+     *   • Düz zemin katmanları (derinlik −19…−5): tek bir dünya dokusunda, aynı sırayla
+     *   • Dağ zirveleri: kâşifin önünde/arkasında kalabilmeleri için her biri kendi
+     *     derinliğiyle ayrı bir resim (hepsi tek bir ortak dokudan kesilir)
+     *
+     * Rastgele sayı KULLANMAZ ve harita kurulduktan SONRA çağrılır: çevrim içi yarışta
+     * aynı tohum = aynı harita kuralı bozulmaz.
+     */
+    bake() {
+      const scene = this.scene;
+      const W = this.cfg.width;
+      const H = this.cfg.height;
+      GS._bakeId = (GS._bakeId || 0) + 1;
+      const id = GS._bakeId;
+
+      // 1) Düz zemin: animasyonsuz Graphics ve resimler
+      const flat = this.created.filter((o) => o.visible && o.depth > -20 && o.depth < -4
+        && (o.type === 'Graphics' || o.type === 'Image') && !scene.tweens.isTweening(o));
+      if (flat.length) {
+        const pad = 160; // harita kenarından taşan nehir/kanyon uçları kesilmesin
+        flat.sort((a, b) => a.depth - b.depth); // kararlı sıralama: aynı derinlikte çizim sırası korunur
+        const rt = scene.add.renderTexture(-pad, -pad, W + pad * 2, H + pad * 2).setOrigin(0).setDepth(-5);
+        rt.draw(flat, pad, pad);
+        flat.forEach((o) => o.setVisible(false));
+        this._track(rt);
+      }
+
+      // 2) Dağ zirveleri: ortak bir dokuya raf raf dizilir, her biri ayrı resim olur
+      const peaks = this.created.filter((o) => o.type === 'Graphics' && o.bakeBox && o.visible);
+      if (!peaks.length) return;
+      const SIZE = 2048;
+      let sheet = null;
+      let sx = 0;
+      let sy = 0;
+      let rowH = 0;
+      let n = 0;
+      const newSheet = () => {
+        const key = `baked_${id}_${n++}`;
+        sheet = scene.textures.addDynamicTexture(key, SIZE, SIZE);
+        this._track({ destroy: () => scene.textures.exists(key) && scene.textures.remove(key) });
+        sx = 0;
+        sy = 0;
+        rowH = 0;
+      };
+      newSheet();
+      peaks.forEach((g, i) => {
+        const b = g.bakeBox;
+        if (sx + b.w > SIZE) { sx = 0; sy += rowH + 2; rowH = 0; }
+        if (sy + b.h > SIZE) newSheet();
+        sheet.draw(g, sx - b.x, sy - b.y);
+        const frame = `p${i}`;
+        sheet.add(frame, 0, sx, sy, b.w, b.h);
+        this._track(scene.add.image(b.x, b.y, sheet.key, frame).setOrigin(0).setDepth(g.depth));
+        g.setVisible(false);
+        sx += b.w + 2;
+        rowH = Math.max(rowH, b.h);
+      });
     }
 
     _track(obj) {

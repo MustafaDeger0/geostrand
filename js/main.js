@@ -84,6 +84,8 @@
       type: Phaser.AUTO,              // WebGL varsa onu, yoksa Canvas kullan
       parent: 'game-container',
       backgroundColor: '#08181b',
+      // İki ekran kartlı dizüstülerde güçlü olanı iste (tarayıcı izin verirse)
+      powerPreference: 'high-performance',
       physics: {
         default: 'arcade',
         arcade: { debug: false },     // true yaparsanız çarpışma kutuları görünür

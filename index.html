@@ -28,7 +28,6 @@
   <!-- Dokunmatik joystick (parmağın değdiği yerde belirir) -->
   <div id="joystick" aria-hidden="true"><span class="knob"></span></div>
   <!-- Hava olayı pusu (kum fırtınası, sis, tipi) -->
-  <div id="weather-haze" aria-hidden="true"></div>
   <!-- Yeni kademe açıldı afişi -->
   <div id="unlock" class="hidden" role="status"></div>
   <!-- Ekran dışındaki ipucu nesnelerini gösteren oklar -->
@@ -154,7 +153,7 @@
           <!-- Kartlar GeographerPad.js tarafından kademeye göre üretilir (3–5 adet) -->
           <div class="slots" id="pad-slots"></div>
 
-          <details class="pad-hint">
+          <details class="pad-hint" open>
             <summary>📐 Gölgeden enlem bul</summary>
             <p class="hint-rules">Gölge <b>kutba</b> doğru düşer. Gölge uzadıkça enlem büyür.</p>
             <div class="ruler" role="table" aria-label="Gölge uzunluğu ve enlem">

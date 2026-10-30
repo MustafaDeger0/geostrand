@@ -243,9 +243,15 @@ body { --hurt: 0; --dry: 0; --cold: 0; --beat: 1.2s; }
   28% { opacity: 0.82; }
   42% { opacity: 1; }
 }
-/* Oyun görüntüsü de etkilenir: renkler solar / kavrulur (yalnızca gerektiğinde, performans için) */
-body.fx-on #game-container {
-  filter: saturate(calc(1 - 0.75 * var(--hurt) - 0.25 * var(--cold))) brightness(calc(1 - 0.25 * var(--hurt))) sepia(calc(0.45 * var(--dry)));
+/* Etki yokken katman hiç çizilmez (tam ekran saydam bir katmanı her karede birleştirmek de maliyetli) */
+body:not(.fx-on) #vignette { display: none; }
+/* NOT: Eskiden burada oyun görüntüsüne CSS "filter" (solma/sepya) uygulanıyordu. Tarayıcı bu
+   filtreyi her karede tüm oyun ekranına yeniden uyguluyordu; su ya da ısı azalınca (özellikle
+   sağanak, tipi, kum fırtınasında) oyun belirgin kasıyordu. Aynı his artık #vignette içindeki
+   hafif renk örtüleriyle veriliyor (aşağıda ::after). */
+#vignette::after {
+  content: ""; position: absolute; inset: 0;
+  background: rgba(150, 105, 45, calc(0.16 * var(--dry)));
 }
 
 /* --- Ekran dışı ipucu okları --- */
@@ -538,11 +544,6 @@ input:disabled + span { opacity: 0.5; cursor: not-allowed; }
 }
 .weather-chip b { font-weight: 700; }
 .weather-chip span { color: var(--muted); font-variant-numeric: tabular-nums; }
-#weather-haze {
-  position: fixed; inset: 0; pointer-events: none; z-index: 4;
-  opacity: 0; transition: opacity 1.2s ease;
-}
-#weather-haze.on { opacity: 1; }
 
 /* --- Puan kutusu --- */
 .rescued.score b { color: #ffd23f; }
@@ -748,6 +749,10 @@ body.touch .act-interact.show { display: flex; animation: pop 0.2s ease-out; }
 
 /* Her soru kendi yerinde: ✔ doğru (yeşil) · ✘ yanlış (kırmızı) · ✋ boş (turuncu) */
 #pad-form fieldset { margin-bottom: 20px; border-radius: 10px; transition: box-shadow 0.2s; }
+/* Başlık (legend) normal bir satır gibi davranır: tarayıcı onu çerçevenin üst çizgisine
+   oturtmaz → doğru/yanlış renkli zemin gelince başlık yukarı kayıp kesilmez, yerinde kalır */
+#pad-form fieldset > legend { float: left; }
+#pad-form fieldset > legend ~ * { clear: both; }
 fieldset[data-field] { animation: none; }
 fieldset[data-field="landform"], fieldset[data-field="continent"] { animation: rise 0.25s ease-out; }
 fieldset.is-ok { box-shadow: 0 0 0 6px #e3f2e6, 0 0 0 8px var(--ok); background: #e3f2e6; }
