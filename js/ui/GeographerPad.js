@@ -171,7 +171,7 @@
             <p class="summary">${escapeHtml(reveal.summary)}</p>
             <p class="points">+${reveal.points} puan${reveal.fast ? ' · hızlı çözüm bonusu' : ''}</p>
           </div>
-          <button type="button" class="btn-signal" id="pad-next">🛩️ Sonraki bölgeye uç</button>`;
+          <button type="button" class="btn-signal" id="pad-next">${reveal.nextLabel || '🛩️ Sonraki bölgeye uç'}</button>`;
         this.doc.getElementById('pad-next').addEventListener('click', () => this.bus.emit(GS.EVENTS.LEVEL_NEXT));
         return;
       }

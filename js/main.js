@@ -32,6 +32,23 @@
   GS.creator = new GS.CharacterCreator(document);
   GS.guide = new GS.Guide(document);
   GS.cutscene = new GS.IntroCutscene(document);
+  // Rozetler (kalıcı istatistik) + vitrin, günlük meydan okuma
+  GS.achievements = new GS.Achievements(safeStorage());
+  GS.trophies = new GS.Trophies(document, GS.achievements);
+  GS.daily = new GS.DailyChallenge(document);
+  GS.dailyRun = null;
+
+  /** localStorage kapalıysa (gizli sekme vb.) hata vermesin */
+  function safeStorage() {
+    try {
+      const k = '__gs_test';
+      window.localStorage.setItem(k, '1');
+      window.localStorage.removeItem(k);
+      return window.localStorage;
+    } catch (e) {
+      return null;
+    }
+  }
 
   const intro = document.getElementById('intro');
 
@@ -57,6 +74,30 @@
   window.addEventListener('orientationchange', () => setTimeout(fitIntro, 200));
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitIntro);
   new MutationObserver(fitIntro).observe(intro, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+
+  /** Başlık ekranı: günlük meydan okuma durumu ve rozet sayısı */
+  function refreshIntroBadges() {
+    const st = GS.daily.status();
+    const statusEl = document.getElementById('daily-status');
+    const streakEl = document.getElementById('daily-streak');
+    const btn = document.getElementById('btn-daily');
+    if (st.played) {
+      const t = st.today;
+      statusEl.textContent = `✔ Bugün: ${t.solved}/5 bölge · ${t.score.toLocaleString('tr-TR')} puan`;
+      btn.classList.add('done');
+    } else if (st.abandoned) {
+      statusEl.textContent = 'Bugünkü hakkın yarıda kaldı · antrenman yapabilirsin';
+      btn.classList.add('done');
+    } else {
+      statusEl.textContent = `${st.label} · herkese aynı 5 bölge`;
+      btn.classList.remove('done');
+    }
+    streakEl.textContent = `🔥 ${st.streak}`;
+    streakEl.classList.toggle('hidden', st.streak < 1);
+    const sum = GS.achievements.summary();
+    document.getElementById('trophy-count').textContent = `${sum.badges}/${sum.badgeTotal}`;
+  }
+  refreshIntroBadges();
 
   // Başlık ekranında en iyi puanı göster
   const best = GS.readBestScore();
@@ -143,9 +184,24 @@
     });
   }
 
+  /**
+   * Günlük meydan okuma: hikâye animasyonu olmadan doğrudan günün 1. bölgesine.
+   * Günün ilk denemesi sıralamaya girer; sonrakiler antrenmandır.
+   */
+  function startDaily() {
+    if (GS.game || GS.creator.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen || GS.trophies.isOpen) return;
+    GS.audio.init();
+    if (!GS.creator.hasSaved) {
+      GS.creator.open({ mode: 'start', onSave: () => startDaily() });
+      return;
+    }
+    GS.dailyRun = GS.daily.createRun();
+    launch(false, 'GameScene');
+  }
+
   /** "Göreve başla": kâşif yoksa önce oluşturucu, sonra açılış animasyonu */
   function start() {
-    if (GS.game || GS.creator.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen) return;
+    if (GS.game || GS.creator.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen || GS.trophies.isOpen) return;
     GS.audio.init(); // ilk tıklamada sesi hazırla
     if (GS.creator.hasSaved) {
       playStory();
@@ -217,6 +273,8 @@
   GS.handleBack = function handleBack() {
     const hidden = (id) => document.getElementById(id).classList.contains('hidden');
     if (GS.cutscene.isPlaying) return GS.cutscene.skip();
+    if (GS.trophies.isOpen) return GS.trophies.close();
+    if (GS.daily.isOpen) return GS.returnToMainMenu();
     if (GS.creator.isOpen) return GS.creator.close(false);
     if (GS.guide.isOpen) return GS.guide.close();
     if (GS.lobby.isOpen) {
@@ -251,6 +309,8 @@
   };
 
   document.getElementById('btn-start').addEventListener('click', start);
+  document.getElementById('btn-daily').addEventListener('click', startDaily);
+  document.getElementById('btn-trophies').addEventListener('click', () => GS.trophies.open(refreshIntroBadges));
   document.getElementById('btn-full').addEventListener('click', () => GS.toggleFullscreen());
   document.getElementById('btn-guide').addEventListener('click', () => GS.guide.open('play'));
   document.getElementById('btn-hero').addEventListener('click', () => GS.creator.open({ mode: 'edit' }));
@@ -259,7 +319,7 @@
       document.removeEventListener('keydown', onIntroKey);
       return;
     }
-    if (GS.creator.isOpen || GS.guide.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen) return;
+    if (GS.creator.isOpen || GS.guide.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen || GS.trophies.isOpen) return;
     if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') start();
     if (e.key === 'f' || e.key === 'F') GS.toggleFullscreen();
   });

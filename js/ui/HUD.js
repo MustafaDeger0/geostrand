@@ -318,6 +318,11 @@
       this.el.tier.textContent = tierName;
     }
 
+    /** Bölge etiketini özel metinle değiştir (ör. "📅 Günlük 2/5") */
+    setRegionLabel(text) {
+      this.el.location.textContent = text;
+    }
+
     /** Hava kartı: olay yoksa gizli */
     setWeather(weather) {
       const el = this.el.weather;
@@ -363,22 +368,34 @@
       setTimeout(() => t.remove(), 3400);
     }
 
-    /** Bölgeler arası uçuş perdesi */
-    showTravel() {
+    /**
+     * Bölgeler arası uçuş perdesi: kurtulunan yer dünya haritasına bayrak olarak dikilir.
+     * @param {{route:Array, final?:boolean, daily?:boolean}} opts
+     */
+    showTravel({ route = [], final = false } = {}) {
       const t = this.el.travel;
+      const $ = (id) => this.doc.getElementById(id);
+      const last = route[route.length - 1];
+      if (last) {
+        const loc = last.loc;
+        const c = GS.CLIMATES[loc.climate];
+        $('travel-kicker').textContent = `🚁 ${route.length}. kurtuluş${last.stars ? ` · ${'⭐'.repeat(last.stars)}` : ''}`;
+        $('travel-place').textContent = GS.RouteMap.shortName(loc.name);
+        $('travel-meta').textContent = `${loc.latitude}° ${loc.hemisphere === 'GUNEY' ? 'Güney' : 'Kuzey'} · ${c.icon} ${c.label} · ${GS.CONTINENTS[loc.continent].label}`;
+      }
+      $('travel-map').innerHTML = GS.RouteMap.svg({ route, animateLast: true });
+      $('travel-next').textContent = final ? '🏁 Günün son bölgesi! Sonuçların hazırlanıyor…' : '…ama Geo-Teleporter yine sıçradı!';
       t.classList.remove('hidden');
-      // Animasyonu yeniden başlat
-      const plane = t.querySelector('.travel-plane');
-      plane.style.animation = 'none';
-      void plane.offsetWidth;
-      plane.style.animation = '';
     }
 
     hideTravel() {
       this.el.travel.classList.add('hidden');
     }
 
-    showGameOver({ escaped, day, minutes, seconds, score, stars, best, newBest }) {
+    showGameOver({ escaped, day, minutes, seconds, score, stars, best, newBest, route = [] }) {
+      this.doc.getElementById('gameover-route').innerHTML = route.length
+        ? `<h3>🗺️ Kaçış rotan</h3>${GS.RouteMap.svg({ route, labels: false, className: 'compact' })}`
+        : '';
       this.el.gameOverStats.innerHTML =
         `<b>${escaped}</b> bölgeden kurtuldun, <b>${minutes} dk ${seconds} sn</b> hayatta kaldın (${day}. gün).<br>` +
         `Puan: <b>${score.toLocaleString('tr-TR')}</b> · ⭐ ${stars}<br>` +

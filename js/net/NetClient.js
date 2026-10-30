@@ -255,5 +255,7 @@
   }
 
   NetClient.hasSession = () => !!loadSession();
+  /** Sunucu adresi ('' = oyunun açıldığı adres). Günlük sıralama (HTTP) da bunu kullanır. */
+  NetClient.serverUrl = serverUrl;
   GS.NetClient = NetClient;
 })(window.GS = window.GS || {});

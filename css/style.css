@@ -1643,3 +1643,227 @@ body.race-mode .weather-chip { display: none; }
   .pad-guide { width: 36px; padding: 0; flex-shrink: 0; }
   .pad-close { flex-shrink: 0; }
 }
+
+/* ==========================================================================
+   v10 · KURTULUŞ HARİTASI · ROZETLER · GÜNLÜK MEYDAN OKUMA
+   ========================================================================== */
+
+/* --- Dünya haritası (RouteMap.js) --- */
+.routemap { display: block; width: 100%; height: auto; border-radius: 12px; overflow: hidden; }
+.rm-land { fill: #6f9a72; stroke: #a8c9a3; stroke-width: 0.6; stroke-linejoin: round; }
+.rm-par { stroke: rgba(234, 242, 236, 0.28); stroke-width: 1; stroke-dasharray: 4 6; }
+.rm-par.equator { stroke: rgba(255, 210, 63, 0.75); stroke-dasharray: none; stroke-width: 1.4; }
+.rm-par-label { fill: rgba(234, 242, 236, 0.7); font: 700 13px var(--body); paint-order: stroke; stroke: rgba(10, 30, 34, 0.7); stroke-width: 3px; }
+.rm-par-label.equator { fill: #ffd23f; }
+.rm-arc { fill: none; stroke: #ffd23f; stroke-width: 2.4; stroke-dasharray: 7 6; stroke-linecap: round; opacity: 0.85; }
+.rm-arc.new { stroke-dasharray: 1200; stroke-dashoffset: 1200; animation: rmDraw 0.9s cubic-bezier(.4, 0, .2, 1) forwards; }
+@keyframes rmDraw { to { stroke-dashoffset: 0; } }
+.rm-pin path { fill: var(--c, var(--flare)); stroke: #10292c; stroke-width: 1.6; }
+.rm-pin text { fill: #fff; font: 800 11px var(--display); text-anchor: middle; paint-order: stroke; stroke: rgba(0, 0, 0, 0.35); stroke-width: 2px; }
+.rm-flag.last .rm-pin path { stroke: #fff; stroke-width: 2.2; }
+.rm-ring { fill: none; stroke: #fff; stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: rmRing 1.6s ease-out infinite; }
+@keyframes rmRing { from { transform: scale(0.6); opacity: 0.9; } to { transform: scale(2.6); opacity: 0; } }
+.rm-flag.new .rm-pin { transform-box: fill-box; transform-origin: 50% 100%; animation: rmDrop 0.55s cubic-bezier(.3, 1.6, .5, 1) 0.85s both; }
+@keyframes rmDrop { from { transform: translateY(-40px) scale(0.4); opacity: 0; } }
+.rm-spark { fill: #fff6c8; filter: drop-shadow(0 0 6px #ffd23f); }
+.rm-heli text { font-size: 26px; text-anchor: middle; }
+.rm-heli { animation: rmHeli 1.6s ease-in both; }
+@keyframes rmHeli { 0% { opacity: 0; transform: translateY(6px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(-46px) translateX(30px); } }
+.rm-empty { margin: 0; color: var(--muted); font-size: 14px; }
+.rm-legend { margin: 10px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; counter-reset: rm; }
+.rm-legend li { counter-increment: rm; display: grid; grid-template-columns: 22px 1fr auto; column-gap: 8px; align-items: center; font-size: 13px; }
+.rm-legend li::before { content: counter(rm); grid-row: span 2; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: #fff; font: 800 11px var(--display); }
+.rm-legend small { color: var(--muted); }
+.rm-stars { grid-row: span 2; font-size: 11px; }
+
+/* --- Uçuş perdesi: harita kartı --- */
+#travel { cursor: pointer; padding: 16px; display: flex; align-items: center; justify-content: center; }
+.travel-card { width: min(900px, calc(100vw - 32px)); text-align: center; animation: rise 0.3s ease-out; }
+.travel-kicker { margin: 0; color: var(--contour); font: 800 15px var(--display); letter-spacing: 0.02em; }
+#travel .travel-place { margin: 4px 0 2px; font: 800 clamp(24px, 4vw, 38px)/1.1 var(--display); color: var(--text); }
+#travel .travel-meta { margin: 0 0 12px; font: 600 15px var(--body); color: var(--muted); }
+.travel-map { border-radius: 14px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--ink-line); overflow: hidden; }
+#travel .travel-next { margin: 14px 0 6px; font: 800 18px var(--display); color: var(--text); opacity: 0; animation: fadeUp 0.4s ease-out 1.4s forwards; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.travel-skip { margin: 0 auto; font-size: 14px; }
+@media (max-height: 520px) {
+  .travel-card { width: min(640px, calc(100vw - 32px), calc((100dvh - 150px) * 2.54)); }
+  #travel .travel-place { font-size: 22px; }
+  #travel .travel-next { margin-top: 6px; font-size: 15px; }
+  #travel .travel-meta { margin-bottom: 6px; }
+}
+
+/* --- Oyun sonu ve menüde rota --- */
+.gameover-card { width: min(620px, 100%); max-height: calc(100dvh - 24px); overflow-y: auto; }
+.gameover-route { margin: 10px 0 14px; }
+.gameover-route h3, .menu-route h3 { margin: 0 0 6px; font: 800 15px var(--display); color: var(--contour); text-align: left; }
+.rm-pin { transform: scale(1.5); transform-box: fill-box; transform-origin: 50% 100%; }
+.routemap.compact .rm-pin { transform: scale(2); }
+.rm-flag.new .rm-pin { animation-name: rmDrop15; }
+@keyframes rmDrop15 { from { transform: translateY(-40px) scale(0.6); opacity: 0; } to { transform: scale(1.5); } }
+.menu-route { margin: 0 0 14px; }
+.menu-route .routemap { box-shadow: 0 0 0 1px var(--ink-line); }
+
+/* --- Başlık ekranı: günlük meydan okuma + rozet düğmeleri --- */
+.btn-daily {
+  display: flex; align-items: center; gap: 10px; flex: 1 1 100%; max-width: 460px;
+  padding: 9px 14px; border-radius: 14px; cursor: pointer; text-align: left; color: var(--text);
+  background: linear-gradient(135deg, rgba(255, 210, 63, 0.16), rgba(255, 138, 61, 0.12));
+  border: 1.5px solid rgba(255, 210, 63, 0.55); transition: transform 0.08s, border-color 0.15s, background 0.15s;
+}
+.btn-daily:hover { border-color: #ffd23f; background: linear-gradient(135deg, rgba(255, 210, 63, 0.24), rgba(255, 138, 61, 0.18)); }
+.btn-daily:active { transform: translateY(2px); }
+.btn-daily.done { border-color: var(--ink-line); background: rgba(127, 181, 154, 0.08); }
+.bd-icon { font-size: 26px; }
+.bd-text { display: grid; flex: 1; min-width: 0; }
+.bd-text b { font: 800 17px var(--display); }
+.bd-text small { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bd-streak { padding: 4px 10px; border-radius: 999px; background: rgba(255, 138, 61, 0.2); color: #ffc79f; font: 800 15px var(--display); white-space: nowrap; }
+.bt-count { margin-left: 4px; padding: 1px 7px; border-radius: 999px; background: rgba(127, 181, 154, 0.18); font-size: 12px; color: var(--contour); }
+
+/* --- Rozet bildirimi --- */
+#trophy-toast {
+  position: fixed; z-index: 95; top: calc(var(--et) + 64px); left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 12px; min-width: min(380px, calc(100vw - 32px)); max-width: calc(100vw - 32px);
+  padding: 10px 18px 10px 10px; border-radius: 16px; pointer-events: none;
+  background: var(--contours), var(--ink); color: var(--text); border: 2px solid var(--tc, #ffd23f);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55), 0 0 30px color-mix(in srgb, var(--tc, #ffd23f) 35%, transparent);
+  animation: ttIn 0.5s cubic-bezier(.2, 1.5, .4, 1);
+}
+#trophy-toast.hidden { display: none; }
+#trophy-toast.leave { animation: ttOut 0.45s ease-in forwards; }
+@keyframes ttIn { from { transform: translate(-50%, -30px) scale(0.85); opacity: 0; } }
+@keyframes ttOut { to { transform: translate(-50%, -24px); opacity: 0; } }
+.tt-medal, .tr-medal {
+  position: relative; flex: 0 0 auto; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 35% 30%, var(--tl, #fff3b0), var(--tc, #ffd23f) 55%, var(--td, #b98a10));
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25), 0 3px 8px rgba(0, 0, 0, 0.35);
+}
+.tt-medal span, .tr-medal span { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 22px; background: rgba(15, 42, 46, 0.88); }
+.tt-medal { animation: ttSpin 0.9s ease-out; }
+@keyframes ttSpin { from { transform: rotateY(180deg) scale(0.6); } }
+.tt-text { display: grid; }
+.tt-text small { color: var(--tc, #ffd23f); font: 800 12px var(--display); text-transform: uppercase; letter-spacing: 0.06em; }
+.tt-text b { font: 800 19px var(--display); }
+.tt-text span { color: var(--muted); font-size: 13px; }
+.tier-bronze { --tc: #d08a4e; --tl: #f6c9a0; --td: #8a5228; }
+.tier-silver { --tc: #c4ced6; --tl: #ffffff; --td: #7c8a95; }
+.tier-gold { --tc: #ffd23f; --tl: #fff3b0; --td: #b98a10; }
+.tier-locked { --tc: #50686a; --tl: #6f8587; --td: #2e4244; }
+
+/* --- Rozet vitrini --- */
+#trophies { z-index: 61; }
+.trophies {
+  width: min(980px, 100%); height: min(780px, calc(100dvh - 32px));
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--paper); color: var(--paper-ink); border-radius: 20px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), 0 0 0 8px rgba(15, 42, 46, 0.9); animation: rise 0.18s ease-out;
+}
+.trophies .guide-header { flex-shrink: 0; }
+.tr-summary { flex-shrink: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 20px; border-bottom: 1.5px solid #b7c9bc; }
+.tr-sum-text { font-size: 15px; }
+.tr-sum-text b { font: 800 18px var(--display); }
+.tr-bar { flex: 1 1 160px; height: 10px; border-radius: 999px; background: #b9cbbd; overflow: hidden; }
+.tr-bar i { display: block; height: 100%; background: linear-gradient(90deg, #d08a4e, #ffd23f); border-radius: inherit; transition: width 0.5s; }
+.tr-legend { display: flex; gap: 10px; font-size: 12px; font-weight: 700; }
+.tr-legend span { color: var(--td); }
+.tr-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 8px 20px 22px; overscroll-behavior: contain; }
+.tr-cat h3 { display: flex; align-items: center; gap: 8px; margin: 16px 0 8px; font: 800 18px var(--display); }
+.tr-cat h3 span { margin-left: auto; font: 700 13px var(--body); color: #557067; }
+.tr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 10px; }
+.tr-card { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 14px; background: #eef3ee; border: 1.5px solid #b7c9bc; }
+.tr-card.on { background: #f7faf6; border-color: var(--tc); box-shadow: 0 2px 0 color-mix(in srgb, var(--tc) 55%, transparent); }
+.tr-card.off .tr-medal { filter: grayscale(1); opacity: 0.55; }
+.tr-card .tr-medal { width: 48px; height: 48px; }
+.tr-card .tr-medal span { width: 36px; height: 36px; font-size: 19px; }
+.tr-info { flex: 1; min-width: 0; }
+.tr-info b { font: 800 16px var(--display); }
+.tr-info p { margin: 2px 0 6px; font-size: 13px; color: #36544e; line-height: 1.35; }
+.tr-card.secret p { font-style: italic; }
+.tr-pips { display: inline-flex; gap: 4px; margin-left: 8px; vertical-align: 2px; }
+.tr-pips i { width: 10px; height: 10px; border-radius: 50%; background: #c3d1c6; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); }
+.tr-pips i.bronze { background: #d08a4e; }
+.tr-pips i.silver { background: #c4ced6; }
+.tr-pips i.gold { background: #ffd23f; }
+.tr-prog { display: block; height: 7px; border-radius: 999px; background: #c9d6cc; overflow: hidden; }
+.tr-prog i { display: block; height: 100%; border-radius: inherit; background: var(--flare); }
+.tr-num { display: block; margin-top: 3px; font-size: 12px; font-weight: 700; color: #557067; }
+.tr-num.done { color: #2d7a4a; }
+
+/* --- Günlük sonuç kartı --- */
+#daily-result { z-index: 52; }
+.daily-card {
+  width: min(900px, 100%); max-height: calc(100dvh - 32px); display: flex; flex-direction: column; overflow: hidden;
+  background: var(--contours), var(--ink); color: var(--text); border-radius: 20px; border: 1px solid var(--ink-line);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6); animation: rise 0.25s ease-out;
+}
+.daily-card .guide-header { flex-shrink: 0; gap: 10px; }
+.daily-card .guide-header h2 { font-size: 18px; }
+.dc-tag { padding: 3px 10px; border-radius: 999px; font: 800 12px var(--display); white-space: nowrap; }
+.dc-tag.ranked { background: rgba(63, 174, 106, 0.25); color: #a6e6bd; }
+.dc-tag.practice { background: rgba(255, 210, 63, 0.18); color: #ffe08a; }
+.dc-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 16px 20px; }
+.dc-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 18px; align-items: start; }
+.dc-title { margin: 0 0 10px; font: 800 26px/1.1 var(--display); }
+.dc-cells { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 0 0 12px; padding: 0; list-style: none; }
+.dc-cells li { display: grid; justify-items: center; gap: 2px; padding: 8px 4px; border-radius: 12px; background: rgba(127, 181, 154, 0.08); border: 1.5px solid var(--ink-line); text-align: center; min-width: 0; }
+.dc-cells li.s3 { border-color: #3fae6a; background: rgba(63, 174, 106, 0.18); }
+.dc-cells li.s2 { border-color: #d6b23a; background: rgba(214, 178, 58, 0.16); }
+.dc-cells li.s1 { border-color: #d97c3a; background: rgba(217, 124, 58, 0.16); }
+.dc-cells li.dead { border-color: var(--bad); background: rgba(217, 71, 63, 0.16); }
+.dc-n { font: 800 13px var(--display); color: var(--muted); }
+.dc-st { font-size: 13px; letter-spacing: -2px; min-height: 18px; }
+.dc-cells small { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.dc-stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.dc-stats span { display: grid; justify-items: center; flex: 1 1 64px; padding: 6px 8px; border-radius: 12px; background: rgba(127, 181, 154, 0.08); }
+.dc-stats b { font: 800 18px var(--display); }
+.dc-stats small { font-size: 11px; color: var(--muted); }
+.dc-stats .streak b { color: #ffc79f; }
+.dc-map .routemap { box-shadow: 0 0 0 1px var(--ink-line); }
+.dc-board { margin-top: 16px; }
+.dc-board h4 { margin: 0 0 8px; font: 800 16px var(--display); color: var(--contour); }
+.dc-board-list ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.dc-board-list li { display: grid; grid-template-columns: 34px minmax(0, 1fr) 44px 52px 70px; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 10px; background: rgba(127, 181, 154, 0.07); font-size: 14px; }
+.dc-board-list li.me { background: rgba(255, 138, 61, 0.2); outline: 1.5px solid var(--flare); }
+.dc-board-list .pos { font: 800 15px var(--display); text-align: center; }
+.dc-board-list .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
+.dc-board-list .sv, .dc-board-list .tm { color: var(--muted); font-size: 13px; text-align: right; }
+.dc-board-list b { text-align: right; font: 800 15px var(--display); }
+.dc-board-list .me-row { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--ink-line); }
+.dc-count, .dc-wait, .dc-note { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+.dc-note { padding: 8px 12px; border-radius: 10px; background: rgba(255, 210, 63, 0.1); color: #ffe7a6; }
+.dc-actions { flex-shrink: 0; display: flex; gap: 8px; justify-content: flex-end; padding: 12px 20px; border-top: 1px solid var(--ink-line); background: rgba(8, 24, 27, 0.4); }
+.dc-actions .btn-signal { width: auto; padding-inline: 24px; }
+@media (max-width: 700px) {
+  .dc-top { grid-template-columns: 1fr; }
+  .dc-title { font-size: 21px; }
+  .dc-body { padding: 12px 14px; }
+  .dc-actions { flex-wrap: wrap; padding: 10px 14px; }
+  .dc-actions > * { flex: 1 1 40%; }
+  .dc-actions .btn-signal { flex-basis: 100%; }
+  .dc-board-list li { grid-template-columns: 28px minmax(0, 1fr) 36px 60px; }
+  .dc-board-list .tm { display: none; }
+  .tr-grid { grid-template-columns: 1fr; }
+  .tr-summary, .tr-body { padding-inline: 14px; }
+  .daily-card .guide-header h2 { font-size: 15px; }
+}
+
+/* Başlık ekranı, dar telefon / alçak yatay ekran: alt düğmeler tek satırda, kısa etiketlerle */
+@media (max-width: 600px), (orientation: landscape) and (max-height: 480px) {
+  .intro .intro-actions { gap: 8px; }
+  .intro .intro-actions .btn-ghost { flex: 1 1 0; min-width: 0; padding-inline: 6px; font-size: 14px; white-space: nowrap; }
+  .intro .intro-actions .btn-ghost.icon { flex: 0 0 44px; }
+  .intro .wide-only, .intro .bt-count { display: none; }
+  .btn-daily { padding: 8px 12px; }
+  .bd-icon { font-size: 22px; }
+  .bd-text b { font-size: 16px; }
+}
+@media (orientation: landscape) and (max-height: 480px) {
+  .intro .intro-actions .btn-ghost { flex: 0 1 auto; padding-inline: 12px; }
+  .btn-daily { flex: 1 1 100%; padding-block: 6px; }
+}
+.daily-card:focus { outline: none; }
+@media (max-width: 600px) {
+  .rm-par-label { display: none; }
+  .dc-actions .btn-ghost { white-space: nowrap; font-size: 14px; padding-inline: 8px; }
+}

@@ -213,6 +213,7 @@
   <div id="menu" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="menu-title">
     <div class="menu">
       <h2 id="menu-title">Oyun duraklatıldı</h2>
+      <section class="menu-route" id="menu-route" aria-label="Kaçış rotan"></section>
       <button type="button" class="btn-signal" id="menu-resume">Devam et</button>
 
       <section class="menu-section" aria-labelledby="menu-sound">
@@ -229,10 +230,13 @@
       </div>
 
       <div class="menu-row">
+        <button type="button" class="btn-ghost" id="menu-trophies">🏅 Rozetler</button>
         <button type="button" class="btn-ghost" id="menu-full">⛶ Tam ekran</button>
-        <button type="button" class="btn-ghost danger" id="menu-restart">↺ Baştan başla</button>
       </div>
-      <button type="button" class="btn-ghost danger menu-home" id="menu-home">🏠 Ana menü</button>
+      <div class="menu-row">
+        <button type="button" class="btn-ghost danger" id="menu-restart">↺ Baştan başla</button>
+        <button type="button" class="btn-ghost danger" id="menu-home">🏠 Ana menü</button>
+      </div>
     </div>
   </div>
 
@@ -393,9 +397,16 @@
   </div>
 
   <!-- ================= BÖLGELER ARASI UÇUŞ ================= -->
+  <!-- Kurtulunan yer dünya haritasına bayrak olarak dikilir (RouteMap.js) -->
   <div id="travel" class="hidden" aria-live="polite">
-    <div class="travel-route"><span class="travel-plane">🚁</span></div>
-    <p>Helikopter seni aldı… ama Geo-Teleporter yine sıçradı!</p>
+    <div class="travel-card">
+      <p class="travel-kicker" id="travel-kicker">🚁 Kurtuldun!</p>
+      <h2 class="travel-place" id="travel-place"></h2>
+      <p class="travel-meta" id="travel-meta"></p>
+      <div class="travel-map" id="travel-map"></div>
+      <p class="travel-next" id="travel-next">…ama Geo-Teleporter yine sıçradı!</p>
+      <button type="button" class="link-btn travel-skip" id="travel-skip">Devam <span class="kb-only">(Enter)</span> ▶</button>
+    </div>
   </div>
 
   <!-- ================= BAŞLANGIÇ EKRANI ================= -->
@@ -415,7 +426,13 @@
       <div class="intro-actions">
         <button type="button" class="btn-signal" id="btn-start">Göreve başla</button>
         <button type="button" class="btn-signal alt" id="btn-race">🌍 Çevrim içi yarış</button>
-        <button type="button" class="btn-ghost" id="btn-hero">🧭 Kâşifi düzenle</button>
+        <button type="button" class="btn-daily" id="btn-daily">
+          <span class="bd-icon" aria-hidden="true">📅</span>
+          <span class="bd-text"><b>Günlük meydan okuma</b><small id="daily-status">Bugün herkese aynı 5 bölge</small></span>
+          <span class="bd-streak hidden" id="daily-streak" title="Üst üste katıldığın gün">🔥 0</span>
+        </button>
+        <button type="button" class="btn-ghost" id="btn-trophies">🏅 Rozetler <span class="bt-count" id="trophy-count"></span></button>
+        <button type="button" class="btn-ghost" id="btn-hero">🧭 Kâşif<span class="wide-only">i düzenle</span></button>
         <button type="button" class="btn-ghost" id="btn-guide">📖 Rehber</button>
         <button type="button" class="btn-ghost icon" id="btn-full" aria-label="Tam ekran">⛶</button>
       </div>
@@ -467,6 +484,7 @@
     <div class="gameover-card">
       <h1>Hayatta kalamadın</h1>
       <p id="gameover-stats"></p>
+      <div class="gameover-route" id="gameover-route"></div>
       <p class="fine">Su ve ısı barlarını izle, çantandaki eşyaları zamanında kullan.</p>
       <div class="gameover-actions">
         <button type="button" class="btn-signal" id="btn-restart">Yeniden dene <kbd class="kb-only">R</kbd></button>
@@ -489,6 +507,7 @@
   <script src="js/data/musicThemes.js"></script>
   <script src="js/data/landforms.js"></script>
   <script src="js/data/weather.js"></script>
+  <script src="js/data/worldmap.js"></script>
 
   <!-- 2) Mantık katmanı (Phaser'dan bağımsız, test edilebilir) -->
   <script src="js/logic/SurvivalSystem.js"></script>
@@ -498,6 +517,8 @@
   <script src="js/logic/Inventory.js"></script>
   <script src="js/logic/LocationManager.js"></script>
   <script src="js/logic/Progression.js"></script>
+  <script src="js/logic/Daily.js"></script>
+  <script src="js/logic/Achievements.js"></script>
 
   <!-- 2b) Karakter çizici (Canvas; oyun ve oluşturucu ortak kullanır) -->
   <script src="js/render/CharacterRenderer.js"></script>
@@ -532,6 +553,9 @@
   <script src="js/ui/RaceHUD.js"></script>
   <script src="js/ui/Lobby.js"></script>
   <script src="js/ui/Moderation.js"></script>
+  <script src="js/ui/RouteMap.js"></script>
+  <script src="js/ui/Trophies.js"></script>
+  <script src="js/ui/DailyChallenge.js"></script>
 
   <!-- 5b) Çevrim içi bağlantı (Socket.IO betiği sunucudan, gerektiğinde yüklenir) -->
   <script src="js/net/NetClient.js"></script>

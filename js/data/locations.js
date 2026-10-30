@@ -13,6 +13,7 @@
  *  ALANLAR:
  *    hemisphere : 'KUZEY' | 'GUNEY'
  *    latitude   : mutlak enlem (0–90)
+ *    lon        : boylam (doğu +, batı −) — yalnızca kurtuluş haritasında işaret için
  *    climate    : climates.js anahtarı
  *    landform   : 'OVA' | 'PLATO' | 'DAG'  (harita da buna göre çizilir)
  *    elevation  : yükselti (m)
@@ -34,7 +35,7 @@
     // ------------------------------------------------------------ EKVATORAL
     {
       id: 'amazon', name: 'Amazon Havzası (Manaus), Brezilya',
-      hemisphere: 'GUNEY', latitude: 3, climate: 'EKVATORAL', landform: 'OVA', elevation: 90, continent: 'GUNEY_AMERIKA',
+      hemisphere: 'GUNEY', latitude: 3, lon: -60.0, climate: 'EKVATORAL', landform: 'OVA', elevation: 90, continent: 'GUNEY_AMERIKA',
       treeStyle: 'broadleaf', soilColor: 0xb5562e,
       clues: {
         tree: { tags: ['Hep yeşil', 'Çok katlı', 'Sarmaşıklı'], text: 'Sık, geniş yapraklı orman.' },
@@ -44,7 +45,7 @@
     },
     {
       id: 'kualalumpur', name: 'Kuala Lumpur (Klang Vadisi), Malezya',
-      hemisphere: 'KUZEY', latitude: 3, climate: 'EKVATORAL', landform: 'OVA', elevation: 60, continent: 'ASYA',
+      hemisphere: 'KUZEY', latitude: 3, lon: 101.7, climate: 'EKVATORAL', landform: 'OVA', elevation: 60, continent: 'ASYA',
       treeStyle: 'broadleaf', soilColor: 0xa9502d,
       clues: {
         tree: { tags: ['Hep yeşil', 'Yağ palmiyesi', 'Sık orman'], text: 'Orman ve palmiye bahçeleri.' },
@@ -56,7 +57,7 @@
     // ------------------------------------------------------------ ÇÖL
     {
       id: 'tassili', name: "Tassili n'Ajjer Platosu, Cezayir",
-      hemisphere: 'KUZEY', latitude: 25, climate: 'COL', landform: 'PLATO', elevation: 1500, continent: 'AFRIKA',
+      hemisphere: 'KUZEY', latitude: 25, lon: 8.5, climate: 'COL', landform: 'PLATO', elevation: 1500, continent: 'AFRIKA',
       treeStyle: 'acacia', soilColor: 0xd9a868,
       clues: {
         tree: { tags: ['Akasya', 'Sahra servisi', 'Çok seyrek'], text: 'Kayalar arasında tek tük ağaç.' },
@@ -66,7 +67,7 @@
     },
     {
       id: 'kahire', name: 'Kahire (Nil Deltası), Mısır',
-      hemisphere: 'KUZEY', latitude: 30, climate: 'COL', landform: 'OVA', elevation: 23, continent: 'AFRIKA',
+      hemisphere: 'KUZEY', latitude: 30, lon: 31.2, climate: 'COL', landform: 'OVA', elevation: 23, continent: 'AFRIKA',
       treeStyle: 'palm', soilColor: 0x4d3c2c,
       clues: {
         tree: { tags: ['Hurma', 'Nehir kıyısı', 'Tarla'], text: 'Nehir boyunca yeşil şerit.' },
@@ -76,7 +77,7 @@
     },
     {
       id: 'atacama', name: 'Atacama Çölü (Calama), Şili',
-      hemisphere: 'GUNEY', latitude: 22, climate: 'COL', landform: 'PLATO', elevation: 2260, continent: 'GUNEY_AMERIKA',
+      hemisphere: 'GUNEY', latitude: 22, lon: -68.9, climate: 'COL', landform: 'PLATO', elevation: 2260, continent: 'GUNEY_AMERIKA',
       treeStyle: 'cactus', soilColor: 0xc9a98a,
       clues: {
         tree: { tags: ['Kaktüs', 'Dikenli', 'Seyrek'], text: 'Yaprak yerine diken var.' },
@@ -88,7 +89,7 @@
     // ------------------------------------------------------------ AKDENİZ
     {
       id: 'antalya', name: 'Antalya Ovası, Türkiye',
-      hemisphere: 'KUZEY', latitude: 37, climate: 'AKDENIZ', landform: 'OVA', elevation: 40, continent: 'ASYA',
+      hemisphere: 'KUZEY', latitude: 37, lon: 30.7, climate: 'AKDENIZ', landform: 'OVA', elevation: 40, continent: 'ASYA',
       treeStyle: 'olive', soilColor: 0xa8432a,
       clues: {
         tree: { tags: ['Zeytin', 'Kızılçam', 'Maki'], text: 'Sert, parlak yapraklı çalılar.' },
@@ -98,7 +99,7 @@
     },
     {
       id: 'madrid', name: 'Madrid (İber Meseta Platosu), İspanya',
-      hemisphere: 'KUZEY', latitude: 40, climate: 'AKDENIZ', landform: 'PLATO', elevation: 650, continent: 'AVRUPA',
+      hemisphere: 'KUZEY', latitude: 40, lon: -3.7, climate: 'AKDENIZ', landform: 'PLATO', elevation: 650, continent: 'AVRUPA',
       treeStyle: 'olive', soilColor: 0x9a6a44,
       clues: {
         tree: { tags: ['Pırnal meşesi', 'Zeytin', 'Kuru ot'], text: 'Seyrek meşeler, sarı otlar.' },
@@ -108,7 +109,7 @@
     },
     {
       id: 'capetown', name: 'Cape Town (Cape Flats), Güney Afrika',
-      hemisphere: 'GUNEY', latitude: 34, climate: 'AKDENIZ', landform: 'OVA', elevation: 30, continent: 'AFRIKA',
+      hemisphere: 'GUNEY', latitude: 34, lon: 18.4, climate: 'AKDENIZ', landform: 'OVA', elevation: 30, continent: 'AFRIKA',
       treeStyle: 'shrub', soilColor: 0xb8a07a,
       clues: {
         tree: { tags: ['Fynbos', 'Sert yaprak', 'Kokulu'], text: 'Makiye benzeyen çalılık.' },
@@ -118,7 +119,7 @@
     },
     {
       id: 'atlas', name: 'Atlas Dağları (Ifrane), Fas',
-      hemisphere: 'KUZEY', latitude: 33, climate: 'AKDENIZ', landform: 'DAG', elevation: 1650, continent: 'AFRIKA',
+      hemisphere: 'KUZEY', latitude: 33, lon: -5.1, climate: 'AKDENIZ', landform: 'DAG', elevation: 1650, continent: 'AFRIKA',
       treeStyle: 'conifer', soilColor: 0x7d5a3c,
       clues: {
         tree: { tags: ['Atlas sediri', 'Pırnal meşesi', 'Yamaç'], text: 'Dağ yamacında sedir ormanı.' },
@@ -128,7 +129,7 @@
     },
     {
       id: 'perth', name: 'Perth (Swan Kıyı Ovası), Avustralya',
-      hemisphere: 'GUNEY', latitude: 32, climate: 'AKDENIZ', landform: 'OVA', elevation: 20, continent: 'OKYANUSYA',
+      hemisphere: 'GUNEY', latitude: 32, lon: 115.9, climate: 'AKDENIZ', landform: 'OVA', elevation: 20, continent: 'OKYANUSYA',
       treeStyle: 'olive', soilColor: 0xc9ab7d,
       clues: {
         tree: { tags: ['Okaliptüs', 'Banksia', 'Sert yaprak'], text: 'Kokulu, sert yapraklı ağaçlar.' },
@@ -140,7 +141,7 @@
     // ------------------------------------------------------------ MUSON
     {
       id: 'mumbai', name: 'Mumbai (Kıyı Ovası), Hindistan',
-      hemisphere: 'KUZEY', latitude: 19, climate: 'MUSON', landform: 'OVA', elevation: 14, continent: 'ASYA',
+      hemisphere: 'KUZEY', latitude: 19, lon: 72.9, climate: 'MUSON', landform: 'OVA', elevation: 14, continent: 'ASYA',
       treeStyle: 'broadleaf', soilColor: 0x4a3b30,
       clues: {
         tree: { tags: ['Tik', 'Bambu', 'Yaprak döken'], text: 'Kurak mevsimde yaprak döker.' },
@@ -150,7 +151,7 @@
     },
     {
       id: 'pune', name: 'Pune (Dekkan Platosu), Hindistan',
-      hemisphere: 'KUZEY', latitude: 18, climate: 'MUSON', landform: 'PLATO', elevation: 560, continent: 'ASYA',
+      hemisphere: 'KUZEY', latitude: 18, lon: 73.9, climate: 'MUSON', landform: 'PLATO', elevation: 560, continent: 'ASYA',
       treeStyle: 'broadleaf', soilColor: 0x2f2a26,
       clues: {
         tree: { tags: ['Tik', 'Yaprak döken', 'Seyrek'], text: 'Kurakta çıplak kalan ağaçlar.' },
@@ -160,7 +161,7 @@
     },
     {
       id: 'darjeeling', name: 'Darjeeling (Himalayalar), Hindistan',
-      hemisphere: 'KUZEY', latitude: 27, climate: 'MUSON', landform: 'DAG', elevation: 2040, continent: 'ASYA',
+      hemisphere: 'KUZEY', latitude: 27, lon: 88.3, climate: 'MUSON', landform: 'DAG', elevation: 2040, continent: 'ASYA',
       treeStyle: 'broadleaf', soilColor: 0x5a4632,
       clues: {
         tree: { tags: ['Çay bahçesi', 'Ormangülü', 'Bulut ormanı'], text: 'Yamaçta basamaklı çay bahçeleri.' },
@@ -170,7 +171,7 @@
     },
     {
       id: 'darwin', name: 'Darwin (Kıyı Ovası), Avustralya',
-      hemisphere: 'GUNEY', latitude: 12, climate: 'MUSON', landform: 'OVA', elevation: 30, continent: 'OKYANUSYA',
+      hemisphere: 'GUNEY', latitude: 12, lon: 130.8, climate: 'MUSON', landform: 'OVA', elevation: 30, continent: 'OKYANUSYA',
       treeStyle: 'broadleaf', soilColor: 0xa14a2a,
       clues: {
         tree: { tags: ['Okaliptüs', 'Mangrov', 'Palmiye'], text: 'Kıyıda mangrov ormanı.' },
@@ -182,7 +183,7 @@
     // ------------------------------------------------------------ SERT KARASAL
     {
       id: 'yakutsk', name: 'Yakutsk (Lena Ovası), Rusya',
-      hemisphere: 'KUZEY', latitude: 62, climate: 'SERT_KARASAL', landform: 'OVA', elevation: 100, continent: 'ASYA',
+      hemisphere: 'KUZEY', latitude: 62, lon: 129.7, climate: 'SERT_KARASAL', landform: 'OVA', elevation: 100, continent: 'ASYA',
       treeStyle: 'conifer', soilColor: 0x8c8a86,
       clues: {
         tree: { tags: ['İğne yaprak', 'Karaçam', 'Tayga'], text: 'Koni biçimli, karlı ağaçlar.' },
@@ -192,7 +193,7 @@
     },
     {
       id: 'altay', name: 'Altay Dağları, Rusya',
-      hemisphere: 'KUZEY', latitude: 50, climate: 'SERT_KARASAL', landform: 'DAG', elevation: 2000, continent: 'ASYA',
+      hemisphere: 'KUZEY', latitude: 50, lon: 87.0, climate: 'SERT_KARASAL', landform: 'DAG', elevation: 2000, continent: 'ASYA',
       treeStyle: 'conifer', soilColor: 0x6e6a62,
       clues: {
         tree: { tags: ['Sibirya sediri', 'Karaçam', 'Kayalık'], text: 'Dik yamaçta iğne yapraklılar.' },
@@ -202,7 +203,7 @@
     },
     {
       id: 'tura', name: 'Orta Sibirya Platosu (Tura), Rusya',
-      hemisphere: 'KUZEY', latitude: 64, climate: 'SERT_KARASAL', landform: 'PLATO', elevation: 600, continent: 'ASYA',
+      hemisphere: 'KUZEY', latitude: 64, lon: 100.2, climate: 'SERT_KARASAL', landform: 'PLATO', elevation: 600, continent: 'ASYA',
       treeStyle: 'conifer', soilColor: 0x7f7c76,
       clues: {
         tree: { tags: ['Karaçam', 'Tayga', 'Seyrek'], text: 'Uçsuz bucaksız karaçam ormanı.' },
@@ -214,7 +215,7 @@
     // ------------------------------------------------------------ TUNDRA
     {
       id: 'kanada', name: 'Baker Lake (Kıyı Ovası), Kanada',
-      hemisphere: 'KUZEY', latitude: 64, climate: 'TUNDRA', landform: 'OVA', elevation: 20, continent: 'KUZEY_AMERIKA',
+      hemisphere: 'KUZEY', latitude: 64, lon: -96.0, climate: 'TUNDRA', landform: 'OVA', elevation: 20, continent: 'KUZEY_AMERIKA',
       treeStyle: 'shrub', soilColor: 0x5b5246,
       clues: {
         tree: { tags: ['Ağaç yok', 'Yosun', 'Liken'], text: 'Bitkiler yere yapışık.' },
@@ -224,7 +225,7 @@
     },
     {
       id: 'brooks', name: 'Brooks Sıradağları, Alaska (ABD)',
-      hemisphere: 'KUZEY', latitude: 68, climate: 'TUNDRA', landform: 'DAG', elevation: 1400, continent: 'KUZEY_AMERIKA',
+      hemisphere: 'KUZEY', latitude: 68, lon: -152.0, climate: 'TUNDRA', landform: 'DAG', elevation: 1400, continent: 'KUZEY_AMERIKA',
       treeStyle: 'shrub', soilColor: 0x6a6258,
       clues: {
         tree: { tags: ['Ağaç yok', 'Liken', 'Cüce söğüt'], text: 'Yamaçta yalnız alçak bitkiler.' },

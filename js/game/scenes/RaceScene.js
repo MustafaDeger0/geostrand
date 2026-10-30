@@ -110,6 +110,11 @@
       this.raceLocked = true;
       this.pad.close();
       this.raceHud.showFinal(e.standings, this.net.playerId, this.net.isHost, e.isPublic);
+      const place = e.standings.findIndex((p) => p.id === this.net.playerId) + 1;
+      if (place > 0 && !this._raceCounted) {
+        this._raceCounted = true;
+        GS.trophies.report(GS.achievements.raceFinished(place));
+      }
       const first = e.standings[0];
       if (first && first.id === this.net.playerId) this.audio.sfx('correct');
     }
@@ -146,6 +151,7 @@
       if (res.correct) {
         this.raceSolved = true;
         this.pad.showRaceSolved(res);
+        GS.trophies.report(GS.achievements.raceSolved(res.rank));
         this.audio.sfx('correct');
         this._updateObjective();
         return;

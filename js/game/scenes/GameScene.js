@@ -114,6 +114,13 @@
 
       this.elapsed = 0;
       this.traveling = false;
+      this.route = [];          // kurtulunan yerler (kurtuluş haritası)
+      this.wrongsTotal = 0;
+      // Günlük meydan okuma: main.js GS.dailyRun'ı kurar (sahne yeniden başlasa da korunur)
+      this.daily = this.scene.key === 'GameScene' && GS.dailyRun ? { ...GS.dailyRun, ranked: GS.daily.claim(GS.dailyRun) } : null;
+      this.dailyResults = [];
+      this._dailyDone = false;
+      if (this.scene.key === 'GameScene') GS.achievements.runStart();
       this._begin();
     }
 
@@ -164,6 +171,10 @@
         this.menu.close();
         this.player.setVelocity(0, 0);
         this.audio.sfx('death');
+        if (this.daily) {
+          this._finishDaily();
+          return;
+        }
         const best = readBest();
         const newBest = this.score.total > best;
         if (newBest) writeBest(this.score.total);
@@ -176,6 +187,7 @@
           stars: this.score.totalStars,
           best: Math.max(best, this.score.total),
           newBest: newBest && this.score.total > 0,
+          route: this.route,
         });
       });
       bus.on(E.RESTART, () => this._restart());
@@ -207,7 +219,7 @@
       kb.on('keydown-F', () => GS.toggleFullscreen());
       kb.on('keydown-ESC', () => this._openMenu());
       kb.on('keydown-R', () => {
-        if (this.survival.isDead) this.bus.emit(GS.EVENTS.RESTART);
+        if (this.survival.isDead && !this.daily) this.bus.emit(GS.EVENTS.RESTART);
       });
     }
 
@@ -316,6 +328,23 @@
       }
       this.hud.toast(`Doğru! ${'⭐'.repeat(scored.stars)} +${scored.points} puan, çantana su ve ısı eklendi`, 'success');
 
+      // Kurtuluş haritası + rozetler + günlük sonuç
+      const solvedLoc = this.world.location;
+      this.route.push({ loc: solvedLoc, stars: scored.stars });
+      if (this.daily) this.dailyResults.push({ stars: scored.stars, points: scored.points, wrong: scored.wrong, seconds: scored.seconds });
+      GS.trophies.report(GS.achievements.levelSolved({
+        loc: solvedLoc,
+        stars: scored.stars,
+        wrongs: scored.wrong,
+        seconds: scored.seconds,
+        hp: this.survival.hp,
+        night: this.dayNight.isNight,
+        weather: this.weather.key,
+        level: this.locations.levelNumber,
+        runScore: this.score.total,
+      }));
+      const dailyLast = this.daily && this.dailyResults.length >= GS.Daily.REGIONS;
+
       this.audio.sfx('correct');
       this._updateObjective();
       const loc = this.world.location;
@@ -339,6 +368,7 @@
         stars: scored.stars,
         points: scored.points,
         fast: scored.fast,
+        nextLabel: dailyLast ? '🏁 Sonuçları gör' : null,
       });
     }
 
@@ -351,6 +381,7 @@
       const W = this.cfg.WRONG_GUESS;
       const level = this.locations.levelNumber;
       this.levelWrongs += 1;
+      this.wrongsTotal += 1;
       const pen = GS.Progression.wrongPenalty(W, this.levelWrongs, level);
       const next = GS.Progression.wrongPenalty(W, this.levelWrongs + 1, level);
       this.survival.drain('hydration', pen.drain);
@@ -380,6 +411,7 @@
         return;
       }
       this.inventory.consume(type);
+      GS.achievements.itemUsed();
       const gained = this.survival.restore(item.stat, this.cfg.REWARD.bonusAmount);
       this.hud.toast(`${item.icon} ${item.label} kullanıldı: +${Math.round(gained)}`, 'success');
       this.audio.sfx('item');
@@ -397,6 +429,7 @@
       const type = this.survival.hydration <= this.survival.bodyTemp ? 'water' : 'heat';
       this.inventory.add(type);
       const item = this.cfg.INVENTORY.items[type];
+      GS.trophies.report(GS.achievements.crateOpened());
 
       // 1) Sandık: zıpla, kapak açılsın
       this.tweens.add({
@@ -437,28 +470,105 @@
     // ================================================================== //
 
     /** Uçuş perdesi → yeni bölge yüklenir → perde kalkar */
+    /**
+     * Uçuş perdesi: kurtulunan yer dünya haritasına bayrak olarak dikilir (RouteMap),
+     * sonra yeni bölge yüklenir. "Devam" / Enter / dokunuş ile beklemeden geçilebilir.
+     */
     _travelToNext() {
       if (this.traveling) return;
       this.traveling = true;
       this.pad.close();
-      this.hud.showTravel();
+      const final = !!this.daily && this.dailyResults.length >= GS.Daily.REGIONS;
+      this.hud.showTravel({ route: this.route, final });
+      this.audio.sfx('arrive');
       // Perde HTML'dir ve gerçek zamanla oynar; bu yüzden Phaser saati yerine
       // tarayıcı saati kullanılır (yavaş bilgisayarda kare hızı düşse de takılmaz).
-      this._travelTimer = window.setTimeout(() => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        window.clearTimeout(this._travelTimer);
+        this._travelSkipOff();
         if (!this.sys.isActive()) return;
-        this._loadNextLocation();
         this.hud.hideTravel();
+        if (final) {
+          this._finishDaily();
+          return;
+        }
+        this._loadNextLocation();
         this.traveling = false;
-      }, 1400);
+      };
+      // Önce animasyon biraz oynasın (yanlışlıkla çift tıklama geçmesin)
+      const startedAt = performance.now();
+      const skip = (e) => {
+        if (performance.now() - startedAt < 700) return;
+        if (e.type === 'keydown' && !['Enter', ' ', 'Escape'].includes(e.key)) return;
+        if (e.type === 'keydown') e.preventDefault(); // aynı tuş, ardından açılan pencerede bir düğmeye basmasın
+        finish();
+      };
+      const travelEl = document.getElementById('travel');
+      travelEl.addEventListener('click', skip);
+      document.addEventListener('keydown', skip);
+      this._travelSkipOff = () => {
+        travelEl.removeEventListener('click', skip);
+        document.removeEventListener('keydown', skip);
+        this._travelSkipOff = () => {};
+      };
+      this._travelTimer = window.setTimeout(finish, final ? 3200 : 3600);
+    }
+
+    /** Günlük meydan okuma bitti (5 bölge tamam ya da kâşif öldü): sonuç kartı */
+    _finishDaily() {
+      if (this._dailyDone) return;
+      this._dailyDone = true;
+      this.traveling = true; // oyun dursun
+      this.pad.close();
+      this.menu.close();
+      const { unlocked } = GS.daily.finish({
+        run: this.daily,
+        results: this.dailyResults,
+        score: this.score.total,
+        timeMs: this.elapsed * 1000,
+        route: this.route,
+        wrongs: this.wrongsTotal,
+      });
+      GS.trophies.report(unlocked);
     }
 
     _loadNextLocation() {
+      if (this.daily) {
+        this._loadDailyLocation();
+        return;
+      }
       const location = this.locations.next();
       const n = this.locations.levelNumber;
       const tiers = this.cfg.PROGRESSION.tiers;
       const tier = GS.Progression.tierFor(n, tiers);
       const weather = GS.WEATHERS[GS.WeatherPicker.pick(location.climate, tier.weatherChance, GS.CLIMATE_WEATHER)];
       this._buildLocation(location, tier, weather, { crates: tier.crates, label: `Bölge ${n}`, levelNumber: n });
+      this._afterLocationLoaded(n, tier, weather);
+    }
+
+    /** Günlük: bölge, hava ve harita (tohum) günün planından; herkes için aynı */
+    _loadDailyLocation() {
+      const n = this.locations.levelNumber + 1;
+      const step = this.daily.plan[n - 1];
+      this.locations.levelNumber = n;
+      this.locations.current = step.location;
+      const tiers = this.cfg.PROGRESSION.tiers;
+      const tier = GS.Progression.tierFor(n, tiers);
+      const weather = GS.WEATHERS[step.weather] || GS.WEATHERS.clear;
+      this._buildLocation(step.location, tier, weather, {
+        crates: tier.crates, label: `Günlük ${n}/${GS.Daily.REGIONS}`, levelNumber: n, seed: step.seed,
+      });
+      this.hud.setRegionLabel(`📅 Günlük ${n}/${GS.Daily.REGIONS}`);
+      if (n === 1) this.hud.toast(`📅 Günlük meydan okuma${this.daily.ranked ? '' : ' (antrenman)'}: bugün herkes aynı 5 bölgede!`, 'info');
+      this._afterLocationLoaded(n, tier, weather);
+    }
+
+    _afterLocationLoaded(n, tier, weather) {
+      const tiers = this.cfg.PROGRESSION.tiers;
+      GS.trophies.report(GS.achievements.levelReached(n));
 
       if (n === this.cfg.GUIDE_ARROWS.untilLevel + 1) {
         // Okların kalktığı ilk bölge: oyuncuya söyle (yeni kademe afişiyle çakışmasın diye biraz sonra)
@@ -615,6 +725,7 @@
 
     _openMenu() {
       if (this.cinematic || this.survival.isDead || this.pad.isOpen || this.traveling) return;
+      this.menu.setRoute(this.route);
       this.menu.open();
     }
 
@@ -670,6 +781,7 @@
     /** Sahne kapanırken DOM dinleyicilerini temizle (restart'ta çift kayıt olmasın) */
     _teardown() {
       window.clearTimeout(this._travelTimer);
+      if (this._travelSkipOff) this._travelSkipOff();
       this.weatherFX.clear();
       this.lighting.destroy();
       this.pad.destroy();

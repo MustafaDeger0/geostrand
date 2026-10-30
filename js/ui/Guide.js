@@ -141,6 +141,17 @@
         <h3>Puan ve yıldızlar</h3>
         <p>Her kurtuluş ${s.base} puan. Her yanlış tahmin −${s.wrongPenalty}. ${s.fastTime} saniyede çözersen +${s.fastBonus}.
           Zor kademeler ek puan verir. <b>⭐⭐⭐</b> hatasız ve hızlı, <b>⭐⭐</b> en fazla bir hata, <b>⭐</b> diğer.</p>
+        <h3>🗺️ Kurtuluş haritası</h3>
+        <p>Kurtulduğun her yer gerçek dünya haritasına numaralı bir bayrak olarak dikilir; bayrağın rengi oranın iklimini gösterir.
+          Haritada ekvator, dönenceler ve kutup dairesi çizilidir: enlemin dünyadaki yerini görürsün. Kaçış rotan duraklatma
+          menüsünde ve oyun sonunda da görünür.</p>
+        <h3>📅 Günlük meydan okuma</h3>
+        <p>Her gün dünyadaki herkese <b>aynı 5 bölge</b> gelir: aynı konumlar, aynı hava, birebir aynı harita. Günün ilk denemesi
+          dünya sıralamasına girer (sonrakiler antrenmandır). Üst üste günlerde katılırsan 🔥 serin büyür. Sonucunu
+          "Sonucu kopyala" ile arkadaşlarına gönderebilirsin. Yeni gün Türkiye saatiyle gece yarısı başlar.</p>
+        <h3>🏅 Rozetler</h3>
+        <p>Keşif, ustalık, hayatta kalma, günlük meydan okuma ve çevrim içi yarışlarda ${GS.Achievements.DEFS.length} rozet seni bekliyor.
+          Çoğu rozetin <b>Bronz → Gümüş → Altın</b> kademesi var; bazıları gizli. İlerlemeni ana menüdeki 🏅 Rozetler'den izle.</p>
         <h3>Hayatta kalma</h3>
         <p>Su sıcak ve kurak yerlerde, vücut ısısı soğukta ve gece hızlı düşer. Biri biterse can azalır.
           Çantadaki su matarası (<kbd>1</kbd>) ve ısı paketi (<kbd>2</kbd>) +50 verir. Haritadaki 📦 yardım sandıklarını da ara.</p>

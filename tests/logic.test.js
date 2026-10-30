@@ -391,3 +391,104 @@ test('Survival: drain anında düşürür, 0 ile sınırlar; ceza katı değişe
   s.startPenalty(10, 4);
   assert.equal(s.decayMultiplier, 4);
 });
+
+// ---------------------------------------------------------------------------
+//  Günlük meydan okuma planı
+// ---------------------------------------------------------------------------
+const { Daily } = require('../js/logic/Daily.js');
+
+const DAILY_DEPS = { locations: LOCATIONS, tiers: CONFIG.PROGRESSION.tiers, climateWeather: CLIMATE_WEATHER, Progression, WeatherPicker };
+
+test('Günlük: aynı tarih → birebir aynı plan; farklı tarih → farklı plan', () => {
+  const a = Daily.plan('2026-10-30', DAILY_DEPS);
+  const b = Daily.plan('2026-10-30', DAILY_DEPS);
+  const c = Daily.plan('2026-10-31', DAILY_DEPS);
+  assert.deepEqual(a, b);
+  assert.notDeepEqual(a.map((p) => p.locationId), c.map((p) => p.locationId));
+});
+
+test('Günlük: 5 farklı konum, aynı iklim arka arkaya gelmez, kademeler 1-2 / 3-4 / 5', () => {
+  for (let d = 0; d < 60; d++) {
+    const key = Daily.shiftKey('2026-01-01', d);
+    const plan = Daily.plan(key, DAILY_DEPS);
+    assert.equal(plan.length, 5);
+    assert.equal(new Set(plan.map((p) => p.locationId)).size, 5);
+    const locs = plan.map((p) => LOCATIONS.find((l) => l.id === p.locationId));
+    for (let i = 1; i < 5; i++) assert.notEqual(locs[i].climate, locs[i - 1].climate, key);
+    assert.deepEqual(plan.map((p) => p.tierIndex), [0, 0, 1, 1, 2]);
+    plan.forEach((p) => assert.ok(Number.isInteger(p.seed) && p.seed >= 0));
+  }
+});
+
+test('Günlük: tarih anahtarı Türkiye saatine göre (UTC 22:30 → ertesi gün)', () => {
+  assert.equal(Daily.dateKey(new Date('2026-10-30T20:30:00Z')), '2026-10-30');
+  assert.equal(Daily.dateKey(new Date('2026-10-30T21:30:00Z')), '2026-10-31');
+});
+
+test('Günlük: seri hesabı ve paylaşım metni', () => {
+  assert.equal(Daily.streak(['2026-10-28', '2026-10-29', '2026-10-30'], '2026-10-30'), 3);
+  assert.equal(Daily.streak(['2026-10-28', '2026-10-29'], '2026-10-30'), 2); // bugün henüz oynanmadı: seri sürüyor
+  assert.equal(Daily.streak(['2026-10-27'], '2026-10-30'), 0);
+  const t = Daily.shareText({ key: '2026-10-30', results: [{ stars: 3 }, { stars: 2 }], solved: 2, score: 450, timeMs: 125000, streak: 4 });
+  assert.match(t, /30 Ekim 2026/);
+  assert.match(t, /🟩🟨💀⬛⬛  2\/5/);
+  assert.match(t, /2:05/);
+  assert.match(t, /🔥 4 gün/);
+});
+
+// ---------------------------------------------------------------------------
+//  Rozetler
+// ---------------------------------------------------------------------------
+const { Achievements } = require('../js/logic/Achievements.js');
+const loc = (id) => LOCATIONS.find((l) => l.id === id);
+const solved = (id, extra = {}) => ({ loc: loc(id), stars: 2, wrongs: 1, seconds: 90, hp: 100, night: false, weather: 'clear', level: 1, runScore: 100, ...extra });
+
+test('Rozet: ilk kurtuluş tek seferlik, kademeli rozet bronz → gümüş', () => {
+  const a = new Achievements();
+  const first = a.levelSolved(solved('amazon'));
+  assert.ok(first.some((u) => u.def.id === 'first_escape'));
+  assert.equal(a.levelSolved(solved('amazon')).some((u) => u.def.id === 'first_escape'), false);
+  let ups = [];
+  for (let i = 0; i < 25; i++) ups = ups.concat(a.levelSolved(solved('perth', { wrongs: 0 })));
+  const sharp = ups.filter((u) => u.def.id === 'first_try').map((u) => u.tierName);
+  assert.deepEqual(sharp, ['Bronz', 'Gümüş']);
+});
+
+test('Rozet: iklim ve kıta kümeleri tekrarı saymaz; iki yarım küre aynı oyunda', () => {
+  const a = new Achievements();
+  a.levelSolved(solved('antalya'));
+  a.levelSolved(solved('madrid'));
+  assert.equal(a.value('climates'), 1);
+  assert.equal(a.value('continents'), 2);
+  a.runStart();
+  a.levelSolved(solved('antalya'));
+  assert.equal(a.value('flag_hemispheres'), 0);
+  const u = a.levelSolved(solved('perth'));
+  assert.ok(u.some((x) => x.def.id === 'hemispheres'));
+});
+
+test('Rozet: eşya kullanınca tasarruf serisi sıfırlanır; gizli rozetler', () => {
+  const a = new Achievements();
+  a.runStart();
+  a.levelSolved(solved('amazon'));
+  a.levelSolved(solved('kahire'));
+  a.itemUsed();
+  a.levelSolved(solved('madrid'));
+  assert.equal(a.value('bestNoItemStreak'), 2);
+  const u = a.levelSolved(solved('darwin', { wrongs: 3, hp: 10 }));
+  assert.ok(u.some((x) => x.def.id === 'clutch'));
+  assert.ok(u.some((x) => x.def.id === 'last_breath'));
+});
+
+test('Rozet: kalıcı kayıt (storage) okunur ve yazılır', () => {
+  const mem = new Map();
+  const storage = { getItem: (k) => mem.get(k) || null, setItem: (k, v) => mem.set(k, v) };
+  const a = new Achievements(storage);
+  a.crateOpened();
+  a.levelSolved(solved('yakutsk', { night: true }));
+  const b = new Achievements(storage);
+  assert.equal(b.value('crates'), 1);
+  assert.equal(b.value('nightEscapes'), 1);
+  assert.equal(b.list().find((x) => x.def.id === 'night').tier, 1);
+  assert.ok(b.summary().got >= 2);
+});

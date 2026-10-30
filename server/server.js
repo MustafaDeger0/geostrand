@@ -4,7 +4,8 @@
  * ============================================================================
  *  Tek bir Node.js programı iki iş yapar:
  *    1) Oyunun dosyalarını (index.html, js/, css/) sunar → oyun bu adreste açılır
- *    2) Socket.IO ile çevrim içi yarışları yönetir:
+ *    2) Günlük meydan okuma sıralaması: /api/daily (DailyBoard.js)
+ *    3) Socket.IO ile çevrim içi yarışları yönetir:
  *         • Hızlı eşleşme : dünyanın her yerinden rastgele rakiplerle yarış
  *         • Özel oda      : 4 harfli kodla arkadaşlarla yarış
  *
@@ -27,6 +28,7 @@ const path = require('path');
 const os = require('os');
 const { Server } = require('socket.io');
 const { RaceRoom } = require('./RaceRoom.js');
+const { DailyBoard } = require('./DailyBoard.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const CODE_LETTERS = 'ABCDEFGHJKLMNPRSTUVYZ';   // karışabilecek harfler (I, O, Q…) yok
@@ -96,10 +98,98 @@ function serveStatic(req, res) {
 }
 
 // ====================================================================== //
-//  2) Çevrim içi yarış
+//  2) Günlük meydan okuma sıralaması (HTTP + JSON)
 // ====================================================================== //
-function createServer({ clock, rng, log = console.log } = {}) {
-  const httpServer = http.createServer(serveStatic);
+const API_HEADERS = {
+  'Content-Type': 'application/json; charset=utf-8',
+  'Cache-Control': 'no-store',
+  // Oyun başka adreste (GitHub Pages, mobil uygulama) açılsa da sıralamaya ulaşabilsin
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'X-Content-Type-Options': 'nosniff',
+};
+
+function makeDailyApi(board) {
+  const buckets = new Map(); // IP → hız sınırlayıcı (dakikada ~30 istek)
+  const limitFor = (ip) => {
+    if (!buckets.has(ip)) {
+      if (buckets.size > 5000) buckets.clear();
+      buckets.set(ip, rateLimiter(0.5, 30));
+    }
+    return buckets.get(ip);
+  };
+  const send = (res, status, obj) => res.writeHead(status, API_HEADERS).end(JSON.stringify(obj));
+
+  return function dailyApi(req, res, url) {
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, API_HEADERS).end();
+      return;
+    }
+    const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+    if (!limitFor(ip)(1)) {
+      send(res, 429, { error: 'Çok fazla istek' });
+      return;
+    }
+    if (req.method === 'GET') {
+      const date = url.searchParams.get('date') || '';
+      if (!board.allowedDates().includes(date)) {
+        send(res, 400, { error: 'date' });
+        return;
+      }
+      send(res, 200, board.board(date, url.searchParams.get('pid') || ''));
+      return;
+    }
+    if (req.method !== 'POST') {
+      send(res, 405, { error: 'method' });
+      return;
+    }
+    let raw = '';
+    let tooBig = false;
+    req.setEncoding('utf8');
+    req.on('data', (chunk) => {
+      raw += chunk;
+      if (raw.length > 2048) {
+        tooBig = true;
+        req.destroy();
+      }
+    });
+    req.on('end', () => {
+      if (tooBig) return;
+      let body = null;
+      try {
+        body = JSON.parse(raw);
+      } catch (e) {
+        send(res, 400, { error: 'json' });
+        return;
+      }
+      const r = board.submit(body);
+      if (!r.ok) send(res, 400, { error: r.error });
+      else send(res, 200, r);
+    });
+  };
+}
+
+// ====================================================================== //
+//  3) Çevrim içi yarış
+// ====================================================================== //
+function createServer({ clock, rng, log = console.log, dailyNow } = {}) {
+  const dailyBoard = new DailyBoard(dailyNow ? { now: dailyNow } : {});
+  const dailyApi = makeDailyApi(dailyBoard);
+  const httpServer = http.createServer((req, res) => {
+    let url;
+    try {
+      url = new URL(req.url, 'http://x');
+    } catch (e) {
+      res.writeHead(400).end();
+      return;
+    }
+    if (url.pathname === '/api/daily') {
+      dailyApi(req, res, url);
+      return;
+    }
+    serveStatic(req, res);
+  });
   const io = new Server(httpServer, {
     maxHttpBufferSize: 16 * 1024,       // büyük mesaj gönderilemez
     pingInterval: 20000,

@@ -34,6 +34,8 @@
         hero: $('menu-hero'),
         restart: $('menu-restart'),
         home: $('menu-home'),
+        trophies: $('menu-trophies'),
+        route: $('menu-route'),
         sliders: [...doc.querySelectorAll('#menu .slider input')],
       };
 
@@ -48,6 +50,7 @@
       on(this.el.full, 'click', () => bus.emit(E.UI_FULLSCREEN));
       on(this.el.guide, 'click', () => bus.emit(E.UI_GUIDE, 'play'));
       on(this.el.hero, 'click', () => bus.emit(E.UI_EDIT_HERO));
+      on(this.el.trophies, 'click', () => GS.trophies.open(() => this.el.trophies.focus()));
       on(this.el.restart, 'click', () => this._confirm(this.el.restart, () => {
         this.close();
         this.bus.emit(GS.EVENTS.RESTART);
@@ -74,6 +77,16 @@
           bus.emit(E.VOLUME_CHANGED, { channel, value: input.value / 100 });
         });
       });
+    }
+
+    /** Duraklatınca üstte küçük kaçış rotası haritası */
+    setRoute(route) {
+      if (!this.el.route) return;
+      if (!route || !route.length) {
+        this.el.route.innerHTML = '<p class="rm-empty">🗺️ Kurtulduğun her bölge burada haritaya bayrak olarak dikilir.</p>';
+        return;
+      }
+      this.el.route.innerHTML = `<h3>🗺️ Kaçış rotan · ${route.length} bölge</h3>${GS.RouteMap.svg({ route, labels: false, className: 'compact' })}`;
     }
 
     open() {
