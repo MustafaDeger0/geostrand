@@ -46,6 +46,7 @@
         },
         penalty: $('hud-penalty'),
         penaltyTime: $('hud-penalty-time'),
+        penaltyX: $('hud-penalty-x'),
         clock: $('hud-clock'),
         phase: $('hud-phase'),
         water: $('inv-water'),
@@ -127,6 +128,7 @@
       this._toggle(this.el.root, 'penalized', s.isPenalized);
       this._toggle(this.el.penalty, 'hidden', !s.isPenalized);
       this._text('penaltyTime', `${Math.ceil(s.penaltyRemaining)}`);
+      this._text('penaltyX', String(s.decayMultiplier));
 
       this._text('clock', view.clock);
       this._text('phase', `${view.phase.icon} ${view.phase.label} · Gün ${view.day}`);

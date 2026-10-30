@@ -140,6 +140,7 @@ body.no-fullscreen #act-full, body.no-fullscreen #btn-full, body.no-fullscreen #
   white-space: nowrap;
 }
 .penalty b { font-variant-numeric: tabular-nums; }
+.penalty i { font-style: normal; }
 .penalty b::after { content: ' sn'; font-weight: 400; }
 
 /* --- Görev göstergesi: "şimdi ne yapmalıyım?" --- */

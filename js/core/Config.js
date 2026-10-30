@@ -60,11 +60,29 @@
       hpDamagePerDepletedStat: 5,// Su veya Isı 0 ise saniyede HP kaybı (her biri için)
       hpRegen: 1.5,              // Su ve Isı yeterliyse saniyede HP iyileşmesi
       regenThreshold: 50,        // İyileşme için Su ve Isı'nın en az bu değerde olması
-      penaltyMultiplier: 2,      // YANLIŞ tahmin: barlar 2 KAT hızlı düşer
+      penaltyMultiplier: 2,      // Ceza varsayılanı (ayrıntı: WRONG_GUESS)
       penaltyDuration: 45,       // Cezanın süresi (oyun saniyesi). Doğru tahmin cezayı siler.
       tempMinC: 28,              // Isı barı 0 iken gösterilen vücut sıcaklığı (°C)
       tempMaxC: 37,              // Isı barı 100 iken gösterilen vücut sıcaklığı (°C)
       criticalLevel: 25,         // HUD'da barın kırmızı yanıp sönme eşiği
+    },
+
+    /**
+     * YANLIŞ TAHMİN CEZASI (tek oyunculu) — rastgele tahminle ilerlenemesin.
+     * Aynı bölgede her yanlış bir öncekinden ağırdır, bölge ilerledikçe hepsi ağırlaşır:
+     *   • Anında kayıp: Su ve Isı barlarından birden düşer
+     *       kayıp = drain[kaçıncı yanlış] × (1 + drainGrowthPerLevel × (bölge − 1)), en çok drainMaxScale katı
+     *       Ör. Bölge 1: −10, −22, −40 · Bölge 8: −18, −40, −74 (3. yanlışta barlar neredeyse boşalır)
+     *   • Hızlı düşüş: `duration` sn boyunca barlar decayMultipliers[kaçıncı yanlış] kat hızlı düşer
+     * 3. yanlıştan sonra çantada yeterince Su Matarası / Isı Paketi yoksa kâşif hayatta kalamaz.
+     * Doğru tahmin hızlı düşüşü siler; sayaç her yeni bölgede sıfırlanır.
+     */
+    WRONG_GUESS: {
+      drain: [10, 22, 40],          // 1., 2., 3. ve sonraki yanlışlar
+      drainGrowthPerLevel: 0.12,    // her bölge %12 daha ağır
+      drainMaxScale: 2.2,
+      decayMultipliers: [2, 3, 4],  // 1., 2., 3.+ yanlış: barlar kaç kat hızlı düşer
+      duration: 45,
     },
 
     /** Tahmin Ödülü ve Envanter */

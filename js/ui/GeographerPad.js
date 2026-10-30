@@ -146,7 +146,10 @@
      * @param {object} result PredictionEvaluator.evaluate() çıktısı
      * @param {object|null} reveal Doğruysa gerçek konum bilgisi + puan
      */
-    showResult(result, reveal) {
+    /**
+     * @param {object} [penalty] yanlışta: {text} ceza özeti (tek oyunculu)
+     */
+    showResult(result, reveal, penalty) {
       this._clearMarks();
       // Her soruyu kendi yerinde işaretle: ✔ yeşil, ✘ kırmızı + ipucu
       result.feedback.forEach((f) => {
@@ -181,7 +184,7 @@
       }).join('');
       this.el.result.className = 'pad-result fail';
       this.el.result.innerHTML = `
-        <div class="res-head">✘ ${result.correctCount}/${result.total} doğru <small>⚠️ Barlar bir süre 2 kat hızlı düşecek</small></div>
+        <div class="res-head">✘ ${result.correctCount}/${result.total} doğru <small>⚠️ ${escapeHtml(penalty && penalty.text ? penalty.text : 'Barlar bir süre hızlı düşecek')}</small></div>
         <div class="badges">${names}<span class="res-tip">Kırmızı soruları düzelt, tekrar gönder</span></div>`;
       this._reveal(wrong[0] && wrong[0].field);
       // Sonuç her denemede yeniden "sallanır": aynı sonuç gelse de fark edilsin

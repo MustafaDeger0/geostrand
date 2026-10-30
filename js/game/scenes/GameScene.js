@@ -342,15 +342,28 @@
       });
     }
 
-    /** YANLIŞ: barlar CONFIG.SURVIVAL.penaltyDuration saniye 2 kat hızlı düşer */
+    /**
+     * YANLIŞ: Su ve Isı anında düşer + barlar bir süre kat kat hızlı düşer.
+     * Aynı bölgedeki her yanlış bir öncekinden, her bölge bir öncekinden ağırdır
+     * (CONFIG.WRONG_GUESS). 3. yanlıştan sonra çanta dolu değilse kâşif yaşayamaz.
+     */
     _punishWrong(result) {
-      const { penaltyDuration, penaltyMultiplier } = this.cfg.SURVIVAL;
-      this.survival.startPenalty(penaltyDuration);
+      const W = this.cfg.WRONG_GUESS;
+      const level = this.locations.levelNumber;
+      this.levelWrongs += 1;
+      const pen = GS.Progression.wrongPenalty(W, this.levelWrongs, level);
+      const next = GS.Progression.wrongPenalty(W, this.levelWrongs + 1, level);
+      this.survival.drain('hydration', pen.drain);
+      this.survival.drain('bodyTemp', pen.drain);
+      this.survival.startPenalty(pen.duration, pen.multiplier);
       this.score.recordWrong();
-      this.pad.showResult(result, null);
-      this.hud.toast(`Yanlış koordinat: ${penaltyDuration} sn boyunca barlar ${penaltyMultiplier} kat hızlı düşecek`, 'danger');
+      this.pad.showResult(result, null, {
+        text: `💧🔥 −${pen.drain} · ${pen.duration} sn ${pen.multiplier} kat hızlı düşüş · sonraki yanlış −${next.drain}`,
+      });
+      this.hud.toast(`Yanlış koordinat! Su ve ısı −${pen.drain}, barlar ${pen.duration} sn ${pen.multiplier} kat hızlı düşecek`, 'danger');
       this.audio.sfx('wrong');
-      this.cameras.main.shake(200, 0.006);
+      this.cameras.main.shake(260, 0.004 + Math.min(this.levelWrongs, 3) * 0.003);
+      this.cameras.main.flash(220, 160, 20, 20, false);
     }
 
     /** Çantadan eşya kullan (1: Su Matarası, 2: Isı Paketi) */
@@ -497,6 +510,7 @@
       this.worldCollider = this.physics.add.collider(this.player, this.world.obstacles);
       this.interaction.setTargets([...this.world.interactables, ...this.world.crates]);
       this.levelSolved = false;
+      this.levelWrongs = 0; // bu bölgedeki yanlış sayısı (ceza her yanlışta ağırlaşır)
       this.found = new Set();
       this.score.startLevel();
 

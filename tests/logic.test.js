@@ -354,3 +354,40 @@ test('SeededRandom: aynı tohum aynı diziyi verir, Math.random geri yüklenir',
   assert.throws(() => SeededRandom.run(1, () => { throw new Error('x'); }));
   assert.equal(Math.random, original);
 });
+
+// ---------------------------------------------------------------------------
+//  Yanlış tahmin cezası: her yanlışta ve her bölgede ağırlaşır
+// ---------------------------------------------------------------------------
+test('Ceza: aynı bölgede her yanlış bir öncekinden ağır', () => {
+  const W = CONFIG.WRONG_GUESS;
+  const a = Progression.wrongPenalty(W, 1, 1);
+  const b = Progression.wrongPenalty(W, 2, 1);
+  const c = Progression.wrongPenalty(W, 3, 1);
+  const d = Progression.wrongPenalty(W, 7, 1);
+  assert.ok(a.drain < b.drain && b.drain < c.drain);
+  assert.ok(a.multiplier < b.multiplier && b.multiplier < c.multiplier);
+  assert.deepEqual(d, c); // 3'ten sonrası en ağır seviyede kalır
+});
+
+test('Ceza: bölge ilerledikçe ağırlaşır, üst sınırla', () => {
+  const W = CONFIG.WRONG_GUESS;
+  assert.ok(Progression.wrongPenalty(W, 2, 8).drain > Progression.wrongPenalty(W, 2, 1).drain);
+  const huge = Progression.wrongPenalty(W, 3, 500).drain;
+  assert.equal(huge, Math.round(W.drain[2] * W.drainMaxScale));
+});
+
+test('Ceza: ileri bölgede 3 yanlış eşyasız kâşifin su ve ısısını bitirir', () => {
+  const W = CONFIG.WRONG_GUESS;
+  const total = [1, 2, 3].reduce((sum, n) => sum + Progression.wrongPenalty(W, n, 8).drain, 0);
+  assert.ok(total >= 100, `toplam ${total}`);
+});
+
+test('Survival: drain anında düşürür, 0 ile sınırlar; ceza katı değişebilir', () => {
+  const s = new SurvivalSystem(CONFIG.SURVIVAL);
+  assert.equal(s.drain('hydration', 30), 30);
+  assert.equal(s.hydration, 70);
+  assert.equal(s.drain('hydration', 500), 70);
+  assert.equal(s.hydration, 0);
+  s.startPenalty(10, 4);
+  assert.equal(s.decayMultiplier, 4);
+});

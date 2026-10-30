@@ -43,6 +43,7 @@
       this.hydration = this.cfg.max;
       this.bodyTemp = this.cfg.max;
       this.penaltyRemaining = 0; // saniye
+      this.penaltyMult = this.cfg.penaltyMultiplier;
       this.isDead = false;
     }
 
@@ -54,9 +55,9 @@
       return this.penaltyRemaining > 0;
     }
 
-    /** Yanlış tahmin cezası varken 2, yoksa 1. */
+    /** Yanlış tahmin cezası varken ceza katı (2, 3, 4…), yoksa 1. */
     get decayMultiplier() {
-      return this.isPenalized ? this.cfg.penaltyMultiplier : 1;
+      return this.isPenalized ? this.penaltyMult : 1;
     }
 
     /** 0–100 ısı barını gerçekçi bir vücut sıcaklığına (°C) çevirir. */
@@ -117,11 +118,28 @@
     //  Tahmin sonucuna bağlı müdahaleler
     // ------------------------------------------------------------------ //
 
-    /** YANLIŞ tahmin: barlar `duration` saniye boyunca 2 kat hızlı düşer. */
-    startPenalty(duration = this.cfg.penaltyDuration) {
+    /**
+     * YANLIŞ tahmin: barlar `duration` saniye boyunca `multiplier` kat hızlı düşer.
+     * Üst üste yanlışlarda süre yenilenir, kat sayısı yenisiyle değişir.
+     */
+    startPenalty(duration = this.cfg.penaltyDuration, multiplier = this.cfg.penaltyMultiplier) {
       const wasPenalized = this.isPenalized;
-      this.penaltyRemaining = duration; // Üst üste yanlışlarda süre yenilenir (birikmez)
-      if (!wasPenalized) this._emit(this.events.PENALTY_START, { duration });
+      this.penaltyRemaining = duration;
+      this.penaltyMult = multiplier;
+      if (!wasPenalized) this._emit(this.events.PENALTY_START, { duration, multiplier });
+    }
+
+    /**
+     * Bir bardan anında düşür (yanlış tahmin darbesi). Can (hp) ayrıca etkilenmez;
+     * barlar boşalınca can her saniye azalır.
+     * @returns {number} gerçekte düşen miktar
+     */
+    drain(stat, amount) {
+      if (!STATS.includes(stat)) throw new Error(`Bilinmeyen bar: ${stat}`);
+      if (this.isDead) return 0;
+      const before = this[stat];
+      this[stat] = this._clamp(before - amount);
+      return before - this[stat];
     }
 
     /** DOĞRU tahmin: aktif ceza anında kalkar. */

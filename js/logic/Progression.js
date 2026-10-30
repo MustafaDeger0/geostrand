@@ -37,6 +37,23 @@
     isUnlockLevel(level, tiers) {
       return level > 1 && tiers.some((t) => t.fromLevel === level);
     },
+
+    /**
+     * Yanlış tahmin cezası: aynı bölgede kaçıncı yanlış olduğuna ve bölge numarasına göre.
+     * @param {object} cfg   CONFIG.WRONG_GUESS
+     * @param {number} nth   bu bölgedeki kaçıncı yanlış (1'den başlar)
+     * @param {number} level bölge numarası
+     * @returns {{drain:number, multiplier:number, duration:number}}
+     */
+    wrongPenalty(cfg, nth, level) {
+      const pick = (arr) => arr[Math.min(nth, arr.length) - 1];
+      const scale = Math.min(cfg.drainMaxScale, 1 + cfg.drainGrowthPerLevel * Math.max(0, level - 1));
+      return {
+        drain: Math.round(pick(cfg.drain) * scale),
+        multiplier: pick(cfg.decayMultipliers),
+        duration: cfg.duration,
+      };
+    },
   };
 
   // ==================================================================== //
