@@ -175,6 +175,9 @@ function makeDailyApi(board) {
 // ====================================================================== //
 function createServer({ clock, rng, log = console.log, dailyNow } = {}) {
   const dailyBoard = new DailyBoard(dailyNow ? { now: dailyNow } : {});
+  // Kimse oynamasa bile eski günler saatte bir silinir
+  const pruneTimer = setInterval(() => dailyBoard._prune(), 60 * 60 * 1000);
+  if (pruneTimer.unref) pruneTimer.unref();
   const dailyApi = makeDailyApi(dailyBoard);
   const httpServer = http.createServer((req, res) => {
     let url;
@@ -386,6 +389,7 @@ function createServer({ clock, rng, log = console.log, dailyNow } = {}) {
       return new Promise((resolve) => httpServer.listen(port, host, () => resolve(httpServer.address().port)));
     },
     close() {
+      clearInterval(pruneTimer);
       rooms.forEach((r) => r.close());
       io.close();
       return new Promise((resolve) => {

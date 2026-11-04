@@ -17,8 +17,9 @@ Bilgisayarında Android Studio ya da Mac **gerekmez**: derleme bulutta yapılır
 | Android bulut derlemesi | `.github/workflows/android.yml` |
 | iOS (ve isteğe bağlı Android) bulut derlemesi | `codemagic.yaml` |
 | Gizlilik politikası sayfası | `gizlilik.html` → `https://geostrand.onrender.com/gizlilik.html` |
-| Mağaza metinleri + gizlilik/yaş soruları cevapları | `store/MAGAZA-METINLERI.md` |
-| Ekran görüntüleri + Google Play öne çıkan görsel | `store/ekran-goruntuleri/` |
+| **Google Play: her sayfanın cevabı, adım adım** | **`store/GOOGLE-PLAY.md`** |
+| Mağaza metinleri + App Store soruları | `store/MAGAZA-METINLERI.md` |
+| Ekran görüntüleri (telefon + tablet) + Google Play öne çıkan görsel | `store/ekran-goruntuleri/` |
 | Android imza anahtarı | **Ayrı gönderildi** (`geostrand-imza.zip`): projeye ve GitHub'a KOYMA |
 
 **Uygulama kimliği (Bundle ID / Package name):** `com.geostrand.enlemdenkacis`. İlk yüklemeden sonra değiştirilemez.
@@ -71,7 +72,7 @@ GitHub'da depon → **Actions → Android uygulaması → Run workflow** (ya da 
 ### 2c. Google Play Console
 1. [play.google.com/console](https://play.google.com/console) → geliştirici hesabı aç (tek seferlik kayıt ücreti; kimlik doğrulaması ister).
 2. **Uygulama oluştur** → ad: *GeoStrand: Enlemden Kaçış*, dil Türkçe, **Oyun**, **Ücretsiz**.
-3. **Kontrol paneli**ndeki "Uygulamanızı ayarlayın" maddelerini doldur. Cevapların hepsi `store/MAGAZA-METINLERI.md`'de:
+3. **Kontrol paneli**ndeki "Uygulamanızı ayarlayın" maddelerini doldur. Her sorunun cevabı adım adım **`store/GOOGLE-PLAY.md`**'de:
    gizlilik politikası adresi, uygulama erişimi, reklamlar (yok), içerik derecelendirmesi, hedef kitle, veri güvenliği,
    mağaza girişi (açıklamalar, simge `icons/icon-512.png`, öne çıkan görsel, telefon ekran görüntüleri).
 4. **Test → Kapalı test** → yeni sürüm → `app-release.aab` yükle → test kullanıcılarını (e-posta listesi) ekle → yayınla.

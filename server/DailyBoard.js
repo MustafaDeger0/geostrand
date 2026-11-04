@@ -81,6 +81,7 @@ class DailyBoard {
 
   /** Bir günün tablosu (ilk 20 + istenirse oyuncunun kendi satırı) */
   board(date, pid) {
+    this._prune();
     const day = this.days.get(date);
     const list = day ? [...day.values()].sort(compare) : [];
     const view = (e, i) => ({ rank: i + 1, name: e.name, score: e.score, solved: e.solved, timeMs: e.timeMs, me: e.pid === pid });
@@ -89,7 +90,7 @@ class DailyBoard {
     return { date, count: list.length, top, me: idx >= 0 ? view(list[idx], idx) : null };
   }
 
-  /** İki günden eski tabloları sil */
+  /** İki günden eski tabloları sil (her istekte ve saatte bir: gizlilik politikasındaki "en fazla 2 gün") */
   _prune() {
     const keep = new Set(this.allowedDates());
     [...this.days.keys()].forEach((k) => {

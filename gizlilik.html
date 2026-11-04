@@ -22,7 +22,7 @@
 <body>
 <main>
   <h1>Gizlilik Politikası</h1>
-  <p class="muted">GeoStrand: Enlemden Kaçış · Son güncelleme: 29 Ekim 2026</p>
+  <p class="muted">GeoStrand: Enlemden Kaçış · Son güncelleme: 3 Kasım 2026</p>
 
   <p>GeoStrand eğitsel bir coğrafya oyunudur. <b>Hesap açmayı, e-posta, telefon numarası, konum, fotoğraf ya da
     rehber gibi kişisel bilgileri istemez.</b> Reklam göstermez, izleme (tracking) ya da analiz araçları kullanmaz,
@@ -36,6 +36,9 @@
     <tr><td>Kâşif adı ve görünümü</td><td>Karakterini her açılışta yeniden oluşturmaman için</td></tr>
     <tr><td>En iyi puan</td><td>Başlık ekranında göstermek için</td></tr>
     <tr><td>Ses ayarları</td><td>Seçtiğin ses düzeylerini hatırlamak için</td></tr>
+    <tr><td>Rozetler ve oyun istatistikleri</td><td>Kazandığın rozetleri ve ilerlemeni göstermek için (ör. kaç bölgeden kurtulduğun)</td></tr>
+    <tr><td>Günlük meydan okuma geçmişi</td><td>Hangi günler oynadığını ve 🔥 gün serini göstermek için (son 60 gün)</td></tr>
+    <tr><td>Rastgele cihaz kimliği</td><td>Günlük sıralamada aynı cihazın günde yalnızca bir kez yer alması için. Rastgele üretilir; adına, telefon numarana ya da cihazın donanım kimliğine bağlı değildir.</td></tr>
   </table>
 
   <h2>Çevrim içi yarış</h2>
@@ -53,8 +56,31 @@
     saklanmaz ve kimliğini belirlemek için kullanılmaz. Barındırma sağlayıcısının kendi kayıtları için
     <a href="https://render.com/privacy">Render gizlilik politikası</a> geçerlidir.</p>
 
+  <h2>Günlük meydan okuma sıralaması</h2>
+  <p>Yalnızca <b>Günlük meydan okuma</b>'yı bitirirsen, o günün dünya sıralamasında yer alman için sunucuya şunlar gönderilir:</p>
+  <table>
+    <tr><th>Veri</th><th>Neden</th><th>Ne kadar süre</th></tr>
+    <tr><td>Kâşif adı</td><td>Sıralamada görünmen için</td><td rowspan="3">Sunucunun belleğinde en fazla 2 gün (o gün ve ertesi gün). Sonra kendiliğinden silinir; diske ya da veritabanına yazılmaz. Sunucu yeniden başlarsa daha erken silinir.</td></tr>
+    <tr><td>Puan, bitirilen bölge sayısı, süre, yanlış sayısı</td><td>Sıralamayı hesaplamak için</td></tr>
+    <tr><td>Rastgele cihaz kimliği</td><td>Aynı cihazın günde yalnızca bir kez sıralamaya girmesi için</td></tr>
+  </table>
+  <p>Sıralamada yalnızca <b>adın, puanın, bölge sayın ve süren</b> görünür; bunları o günün meydan okumasını oynayan
+    herkes görebilir. Cihaz kimliği kimseye gösterilmez. Uygunsuz adlar otomatik olarak değiştirilir.
+    Sıralamaya girmek istemiyorsan Günlük meydan okumayı oynamaman yeterli; oyunun geri kalanı bundan etkilenmez.</p>
+
+  <h2>Veriyi kimlerle paylaşıyoruz?</h2>
+  <p>Hiç kimseyle. Veriler satılmaz, reklam ya da analiz şirketlerine verilmez. Tüm bağlantılar şifrelidir (HTTPS / WSS).</p>
+
+  <h2>Verilerini silmek</h2>
+  <p>Cihazındaki veriler uygulamayı silince ya da tarayıcı verilerini temizleyince silinir. Sunucudaki çevrim içi veriler
+    yukarıdaki sürelerin sonunda kendiliğinden silinir. Daha erken silinmesini istersen aşağıdaki adrese yaz.</p>
+
   <h2>Çocuklar</h2>
-  <p>Oyun çocuklardan kişisel bilgi toplamaz. Çevrim içi yarışta yalnızca oyuncunun kendi seçtiği takma ad kullanılır.</p>
+  <p>Oyun çocuklardan kişisel bilgi toplamaz. Çevrim içi yarışta ve günlük sıralamada yalnızca oyuncunun kendi seçtiği
+    takma ad kullanılır. Gerçek adını, okulunu ya da başka kişisel bilgini ad olarak yazma.</p>
+
+  <h2>Değişiklikler</h2>
+  <p>Bu politika değişirse güncel hâli bu sayfada yayımlanır ve yukarıdaki tarih güncellenir.</p>
 
   <h2>İletişim</h2>
   <p>Sorular ve silme talepleri için: <b>geoostrand@gmail.com</b></p>
@@ -65,8 +91,13 @@
       location, photos or contacts. It shows no ads and uses no tracking or analytics. Your explorer name, best score and
       sound settings are stored only on your device. If you use the optional online race, your chosen nickname, character
       appearance, in-game position and guesses are sent to our game server (hosted on Render.com) to run the race; they
-      are kept only in memory while the room is open and are deleted when it closes. Nicknames are visible to other
-      players in the same room; offensive names are filtered and can be hidden or reported. There is no chat.
+      are kept only in memory while the room is open and are deleted when it closes. If you finish the optional Daily
+      Challenge, your nickname, score, number of regions, time, number of wrong guesses and a random device identifier
+      (not linked to your hardware or identity) are sent to the server to build that day's public leaderboard; they are
+      kept in memory for at most 2 days and then deleted automatically. Nicknames, scores and times are visible to other
+      players; offensive names are filtered and can be hidden or reported. There is no chat. Badges, statistics and your
+      daily history are stored only on your device. Data is never sold or shared with third parties, and all connections
+      are encrypted (HTTPS/WSS). To request earlier deletion, contact us.
       Contact: <b>geoostrand@gmail.com</b></p>
   </div>
 </main>
