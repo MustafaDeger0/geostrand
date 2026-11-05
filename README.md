@@ -55,7 +55,6 @@ sınırdır; puanı yine de sunucu verir.
 ## Telefon ve Tablet
 
 Oyun telefonda ve tablette de tarayıcıdan oynanır; ekran **dikey de yatay da** kullanılabilir.
-Dosyaları bir web sunucusuna (ör. GitHub Pages, Netlify, okulun sunucusu) koyup bağlantıyı açmak yeterlidir.
 
 | Dokunuş | İşlev |
 |---|---|
