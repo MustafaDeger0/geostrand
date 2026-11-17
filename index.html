@@ -35,6 +35,7 @@
 
   <!-- ================= HUD ================= -->
   <div id="hud" class="hidden">
+    <div class="hud-top">
     <!-- Sol üst: hayatta kalma göstergeleri -->
     <section class="panel vitals" aria-label="Hayatta kalma">
       <div class="hero-head">
@@ -74,6 +75,7 @@
       <div class="obj-hint" id="obj-hint">Sarı <b>?</b> işaretlerine yürü, <kbd>E</kbd> ile incele</div>
     </section>
 
+    <div class="hud-status">
     <!-- Sağ üst: saat ve pusula -->
     <section class="panel clock">
       <div class="clock-text">
@@ -88,6 +90,9 @@
       </svg>
     </section>
     <div class="panel weather-chip hidden" id="hud-weather"></div>
+    </div>
+    </div>
+    <div class="hud-guidance" id="hud-guidance"></div>
 
     <!-- Ortada: ne kötü gidiyor + ne yapmalı (dokununca önerilen eşyayı kullanır) -->
     <button type="button" class="vital-alert hidden" id="vital-alert"></button>
@@ -97,6 +102,7 @@
       <span class="ai-icon" aria-hidden="true">👆</span><span class="ai-label" id="act-interact-label">İncele</span>
     </button>
 
+    <div class="hud-bottom">
     <!-- Sol alt: çanta -->
     <section class="hotbar" aria-label="Çanta">
       <button type="button" class="slot-btn" id="use-water" title="Su Matarası: +50 su">
@@ -120,6 +126,7 @@
       <button type="button" class="act" id="act-full" aria-label="Tam ekran"><span id="full-icon">⛶</span><kbd>F</kbd></button>
       <button type="button" class="act" id="act-menu" aria-label="Menü"><span>☰</span><kbd>Esc</kbd></button>
     </nav>
+    </div>
   </div>
 
   <div id="toasts" aria-live="polite"></div>

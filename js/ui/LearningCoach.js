@@ -15,7 +15,8 @@
       const buttons = this.root.querySelectorAll('button');
       buttons[0].addEventListener('click', openPad);
       buttons[1].addEventListener('click', () => { this.dismissed = true; this.root.hidden = true; });
-      doc.body.appendChild(this.root);
+      const host = doc.getElementById('hud-guidance');
+      (host || doc.body).appendChild(this.root);
     }
 
     static step(found, clueIds, solved) {

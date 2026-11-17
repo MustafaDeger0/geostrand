@@ -101,6 +101,52 @@
         if (this._objective) this.setObjective(this._objective);
       };
       GS.Device.onChange(this._onDevice);
+      this._observeLayout();
+    }
+
+    /** Track actual panel bounds after text wraps, font loading and device rotation. */
+    _observeLayout() {
+      const top = this.el.root.querySelector('.hud-top');
+      const bottom = this.el.root.querySelector('.hud-bottom');
+      if (!top || !bottom) return;
+      const win = this.doc.defaultView;
+      const body = this.doc.body;
+      const race = this.doc.querySelector('#race-hud .race-status');
+      let frame = null;
+      let stopped = false;
+      const write = (node, key, value) => {
+        if (node.style.getPropertyValue(key) !== value) node.style.setProperty(key, value);
+      };
+      const measure = () => {
+        frame = null;
+        if (stopped) return;
+        const height = body.classList.contains('race-mode') && race ? race.getBoundingClientRect().height : 0;
+        write(this.el.root, '--race-head-height', Math.ceil(height) + 'px');
+        write(body, '--hud-top-end', Math.ceil(top.getBoundingClientRect().bottom) + 'px');
+        write(body, '--hud-bottom-start', Math.floor(bottom.getBoundingClientRect().top) + 'px');
+      };
+      const schedule = () => {
+        if (!stopped && frame === null) frame = win.requestAnimationFrame(measure);
+      };
+      const resize = win.ResizeObserver ? new win.ResizeObserver(schedule) : null;
+      if (resize) [top, bottom, race].filter(Boolean).forEach((node) => resize.observe(node));
+      const mode = win.MutationObserver ? new win.MutationObserver(schedule) : null;
+      if (mode) mode.observe(body, { attributes: true, attributeFilter: ['class'] });
+      win.addEventListener('resize', schedule);
+      win.visualViewport?.addEventListener('resize', schedule);
+      this.doc.fonts?.ready.then(schedule);
+      schedule();
+      this._stopLayout = () => {
+        stopped = true;
+        if (frame !== null) win.cancelAnimationFrame(frame);
+        resize?.disconnect();
+        mode?.disconnect();
+        win.removeEventListener('resize', schedule);
+        win.visualViewport?.removeEventListener('resize', schedule);
+        this.el.root.style.removeProperty('--race-head-height');
+        body.style.removeProperty('--hud-top-end');
+        body.style.removeProperty('--hud-bottom-start');
+      };
     }
 
     _on(el, fn) {
@@ -405,6 +451,7 @@
     }
 
     destroy() {
+      if (this._stopLayout) this._stopLayout();
       this._listeners.forEach(([el, fn]) => el.removeEventListener('click', fn));
       this._listeners = [];
       this.el.gameOver.classList.add('hidden');
