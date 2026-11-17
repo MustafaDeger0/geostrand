@@ -118,10 +118,16 @@
       this.wrongsTotal = 0;
       // Günlük meydan okuma: main.js GS.dailyRun'ı kurar (sahne yeniden başlasa da korunur)
       this.daily = this.scene.key === 'GameScene' && GS.dailyRun ? { ...GS.dailyRun, ranked: GS.daily.claim(GS.dailyRun) } : null;
+      this._dailyStartedAt = Date.now();
+      this._sending = false;
+      this._pendingGuess = null;
       this.dailyResults = [];
       this._dailyDone = false;
+      this.learning = this.scene.key === 'GameScene' && !!GS.learningMode;
       if (this.scene.key === 'GameScene') GS.achievements.runStart();
+      if (this.learning) this.coach = new GS.LearningCoach(document, () => this._openPad());
       this._begin();
+      if (this.daily && this.daily.message) this.hud.toast(this.daily.message, 'info');
     }
 
     /** Oyunu başlat. Tek oyunculu: ilk bölgeyi yükle. (RaceScene: sunucudan gelen turu bekler) */
@@ -229,6 +235,7 @@
     update(time, delta) {
       if (!this.world) return;
       const dt = Math.min(delta / 1000, 0.1); // sekme arka plandayken dev sıçramaları engelle
+      if (this.coach) this.coach.setVisible(!this._isBlocked());
       const dead = this.survival.isDead;
       const halted = this._isHalted();                    // zaman durur
       const blocked = this._isBlocked() || dead;           // oyuncu hareket edemez
@@ -265,7 +272,7 @@
 
     /** Zaman tamamen durur mu? (menü, rehber, karakter oluşturucu, uçuş) */
     _isHalted() {
-      return this.cinematic || this.menu.isOpen || this.traveling || GS.guide.isOpen || GS.creator.isOpen;
+      return this._sending || this.cinematic || this.menu.isOpen || this.traveling || GS.guide.isOpen || GS.creator.isOpen;
     }
 
     /** Oyuncu hareket edemez mi? (duraklama ya da Pad açık) */
@@ -283,6 +290,7 @@
      * Örn. Çöl gecesi + kum fırtınası + Bölge 5 → su ve ısı çok hızlı düşer.
      */
     _currentEnvironment() {
+      if (this.learning) return { hydrationFactor: 0, tempFactor: 0 };
       const climate = GS.CLIMATES[this.world.location.climate];
       const w = this.weather;
       const k = this.tier.decayMultiplier;
@@ -295,29 +303,56 @@
     // ================================================================== //
     //  TAHMİN → ÖDÜL / CEZA
     // ================================================================== //
-    _handlePrediction(guess) {
-      if (this.levelSolved || this.survival.isDead) return;
+    async _handlePrediction(guess) {
+      if (this.levelSolved || this.survival.isDead || this._sending) return;
 
       const errors = this.evaluator.validate(guess, this.tier.fields);
       if (errors.length) {
         this.pad.showErrors(errors);
         return;
       }
-      const result = this.evaluator.evaluate(guess, this.world.location, {
+      let authoritative = null;
+      if (this.daily && this.daily.ranked) {
+        this._sending = true;
+        this.pad.setSending(true);
+        if (!this._pendingGuess) this._pendingGuess = { guess, id: GS.DailyChallenge.requestId() };
+        try {
+          authoritative = await GS.daily.guess(this.daily, this.locations.levelNumber, this._pendingGuess.guess, this._pendingGuess.id);
+          guess = this._pendingGuess.guess;
+          this._pendingGuess = null;
+        } catch (err) {
+          if (err.lockMs) { this._pendingGuess = null; this.pad.lockSubmit(err.lockMs); }
+          this.hud.toast(err.lockMs ? err.message : 'Tahmin sunucuya ulaşmadı. Tekrar gönder: önceki tahmin güvenle yeniden denenecek.', 'danger');
+          return;
+        } finally {
+          this._sending = false;
+          if (this.sys.isActive()) this.pad.setSending(false);
+        }
+        if (!this.sys.isActive() || this._dailyDone) return;
+      }
+      const result = authoritative ? authoritative.result : this.evaluator.evaluate(guess, this.world.location, {
         fields: this.tier.fields,
         latitudeTolerance: this.tier.latitudeTolerance,
       });
-      if (result.isCorrect) this._rewardCorrect(result);
-      else this._punishWrong(result);
+      if (result.isCorrect) this._rewardCorrect(result, authoritative);
+      else {
+        this._punishWrong(result);
+        if (authoritative && authoritative.lockMs) this.pad.lockSubmit(authoritative.lockMs);
+      }
     }
 
     /** DOĞRU: +50 Su ve +50 Isı (çantaya ya da doğrudan), puan + yıldız, ceza silinir */
-    _rewardCorrect(result) {
+    _rewardCorrect(result, authoritative) {
       const { bonusAmount, autoApply } = this.cfg.REWARD;
       this.levelSolved = true;
       this.locations.markEscaped();
       this.survival.clearPenalty();
-      const scored = this.score.finishLevel(this.locations.levelNumber, this.tier.index);
+      let scored = this.score.finishLevel(this.locations.levelNumber, this.tier.index);
+      if (authoritative) {
+        scored = authoritative.scored;
+        this.score.history[this.score.history.length - 1] = scored;
+        this.score.total = authoritative.total;
+      }
 
       if (autoApply) {
         this.survival.restore('hydration', bonusAmount);
@@ -332,7 +367,7 @@
       const solvedLoc = this.world.location;
       this.route.push({ loc: solvedLoc, stars: scored.stars });
       if (this.daily) this.dailyResults.push({ stars: scored.stars, points: scored.points, wrong: scored.wrong, seconds: scored.seconds });
-      GS.trophies.report(GS.achievements.levelSolved({
+      if (!this.learning) GS.trophies.report(GS.achievements.levelSolved({
         loc: solvedLoc,
         stars: scored.stars,
         wrongs: scored.wrong,
@@ -382,6 +417,12 @@
       const level = this.locations.levelNumber;
       this.levelWrongs += 1;
       this.wrongsTotal += 1;
+      if (this.learning) {
+        this.score.recordWrong();
+        this.pad.showResult(result, null, { text: 'Öğrenme modu: ceza yok. İpuçlarını karşılaştırıp yeniden dene.' });
+        this.audio.sfx('wrong');
+        return;
+      }
       const pen = GS.Progression.wrongPenalty(W, this.levelWrongs, level);
       const next = GS.Progression.wrongPenalty(W, this.levelWrongs + 1, level);
       this.survival.drain('hydration', pen.drain);
@@ -411,7 +452,7 @@
         return;
       }
       this.inventory.consume(type);
-      GS.achievements.itemUsed();
+      if (!this.learning) GS.achievements.itemUsed();
       const gained = this.survival.restore(item.stat, this.cfg.REWARD.bonusAmount);
       this.hud.toast(`${item.icon} ${item.label} kullanıldı: +${Math.round(gained)}`, 'success');
       this.audio.sfx('item');
@@ -429,7 +470,7 @@
       const type = this.survival.hydration <= this.survival.bodyTemp ? 'water' : 'heat';
       this.inventory.add(type);
       const item = this.cfg.INVENTORY.items[type];
-      GS.trophies.report(GS.achievements.crateOpened());
+      if (!this.learning) GS.trophies.report(GS.achievements.crateOpened());
 
       // 1) Sandık: zıpla, kapak açılsın
       this.tweens.add({
@@ -528,7 +569,7 @@
         run: this.daily,
         results: this.dailyResults,
         score: this.score.total,
-        timeMs: this.elapsed * 1000,
+        timeMs: this.daily.ranked ? Date.now() - this._dailyStartedAt : this.elapsed * 1000,
         route: this.route,
         wrongs: this.wrongsTotal,
       });
@@ -568,9 +609,9 @@
 
     _afterLocationLoaded(n, tier, weather) {
       const tiers = this.cfg.PROGRESSION.tiers;
-      GS.trophies.report(GS.achievements.levelReached(n));
+      if (!this.learning) GS.trophies.report(GS.achievements.levelReached(n));
 
-      if (n === this.cfg.GUIDE_ARROWS.untilLevel + 1) {
+      if (!this.learning && n === this.cfg.GUIDE_ARROWS.untilLevel + 1) {
         // Okların kalktığı ilk bölge: oyuncuya söyle (yeni kademe afişiyle çakışmasın diye biraz sonra)
         window.setTimeout(() => {
           if (this.sys.isActive() && this.locations.levelNumber === n) {
@@ -625,7 +666,7 @@
       this.score.startLevel();
 
       this.pad.resetForLocation(label, tier);
-      this.hud.setRegion(levelNumber, tier.name);
+      this.hud.setRegion(levelNumber, this.learning ? 'Öğrenme modu · ceza yok' : tier.name);
       this._updateObjective();
       this.hud.setWeather(weather);
       this.weatherFX.set(weather);
@@ -638,10 +679,11 @@
      * Sonrasında ipuçlarını oyuncu kendisi keşfeder. (RaceScene: hiç yok)
      */
     _arrowsFor(levelNumber) {
-      return levelNumber <= this.cfg.GUIDE_ARROWS.untilLevel;
+      return this.learning || levelNumber <= this.cfg.GUIDE_ARROWS.untilLevel;
     }
 
     _updateObjective() {
+      if (this.coach) this.coach.update(this.found, this.tier.clues, this.levelSolved);
       this.hud.setObjective({
         clueIds: this.tier.clues,
         found: this.found,
@@ -782,6 +824,7 @@
     _teardown() {
       window.clearTimeout(this._travelTimer);
       if (this._travelSkipOff) this._travelSkipOff();
+      if (this.coach) this.coach.destroy();
       this.weatherFX.clear();
       this.lighting.destroy();
       this.pad.destroy();

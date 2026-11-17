@@ -134,6 +134,21 @@ test('çevrim içi: özel oda, hızlı eşleşme ve statik dosyalar', async (t) 
     assert.ok((await b.call('room:rejoin', { code: created.code, token: 'sahte' })).error);
   });
 
+  await t.test('same-socket rejoin stays connected and a replacement socket owns the session', async () => {
+    const a = client(url);
+    t.after(() => a.close());
+    const created = await a.call('room:create', { name: 'Tek oturum' });
+    const payload = { code: created.code, token: created.token };
+    assert.equal((await a.call('room:rejoin', payload)).ok, true);
+    const room = app.rooms.get(created.code);
+    assert.equal(room.connectedCount, 1);
+    const b = client(url);
+    t.after(() => b.close());
+    assert.equal((await b.call('room:rejoin', payload)).ok, true);
+    assert.equal(room.connectedCount, 1);
+    assert.equal(room.players.get(created.playerId).connected, true);
+  });
+
   await t.test('hız sınırı: sel gibi mesaj gönderen yavaşlatılır', async () => {
     const s = client(url);
     t.after(() => s.close());

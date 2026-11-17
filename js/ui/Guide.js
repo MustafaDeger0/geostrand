@@ -132,6 +132,12 @@
           <li><b>Tahmin et.</b> <kbd>P</kbd> ile Pad'i aç, soruları cevapla ve koordinatı gönder.</li>
           <li><b>Kurtul.</b> Doğruysa çantana su ve ısı eklenir, sonraki bölgeye uçarsın. Yanlışsa su ve ısın anında düşer, barlar bir süre kat kat hızlı azalır. Aynı bölgedeki her yanlış bir öncekinden, ilerideki bölgeler de daha ağır cezalandırılır: rastgele tahminle 3. yanlıştan sonra çantan dolu değilse hayatta kalamazsın.</li>
         </ol>
+        <h3>Öğrenme modu ve günlük sıralama</h3>
+        <p>Ana menüdeki <b>Öğrenme modu</b> uygulamalı eğitimle başlar: ipuçlarını bul, karşılaştır, Pad’de tahmin et.
+          Su ve ısı azalmaz; yanlış cevap ceza vermez. Bu mod rekor ve rozet kazandırmaz.</p>
+        <p>Yeni günlük sıralamada cevaplar, puan ve süre sunucuda doğrulanır. Süre gerçek zamandır;
+          Pad ve menüde de ilerler. Yanlışta telsiz 8 saniye bekler. İnternet yoksa sıralamalı hak harcanmadan antrenman açılır.
+          Eski uygulamaların sonuçları ayrı tabloda kalır.</p>
         <h3>Kademeler</h3>
         <p>Bölgeler ilerledikçe yeni ipuçları ve sorular açılır, enlem toleransı daralır.</p>
         <div class="table-wrap"><table class="guide-table">

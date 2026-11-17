@@ -72,8 +72,10 @@
     open(clue) {
       this._highlight(clue ? clue.id : null);
       if (this.isOpen) return;
+      this._returnFocus = this.doc.activeElement;
       this.isOpen = true;
       this.el.root.classList.remove('hidden');
+      this.el.close.focus();
       this.bus.emit(GS.EVENTS.PAD_OPENED);
     }
 
@@ -81,7 +83,7 @@
       if (!this.isOpen) return;
       this.isOpen = false;
       this.el.root.classList.add('hidden');
-      if (this.doc.activeElement) this.doc.activeElement.blur();
+      if (this._returnFocus && this._returnFocus.isConnected) this._returnFocus.focus();
       this.bus.emit(GS.EVENTS.PAD_CLOSED);
     }
 
@@ -105,6 +107,7 @@
         this.el.form.querySelector(`[data-field="${f}"]`).classList.toggle('hidden', !this.fields.includes(f));
       });
       this.el.form.reset();
+      this._sending = false;
       this._syncLatitude();
       clearInterval(this._lockTimer);
       this._lockTimer = null;
@@ -330,6 +333,15 @@
         if (e.target === this.el.root) this.close(); // karartılmış arka plana tıklama
       });
       on(this.doc, 'keydown', (e) => {
+        if (this.isOpen && !GS.guide.isOpen && e.key === 'Tab') {
+          const nodes = [...this.el.root.querySelectorAll('button:not(:disabled), input:not(:disabled), summary, [tabindex="0"]')]
+            .filter((el) => el.getClientRects().length);
+          const first = nodes[0], last = nodes[nodes.length - 1];
+          if (nodes.length && (e.shiftKey ? this.doc.activeElement === first : this.doc.activeElement === last)) {
+            e.preventDefault();
+            (e.shiftKey ? last : first).focus();
+          }
+        }
         if (this.isOpen && e.key === 'Escape') {
           e.preventDefault();
           e.stopPropagation(); // Phaser aynı Esc ile duraklatma menüsünü açmasın

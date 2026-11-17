@@ -1867,3 +1867,20 @@ body.race-mode .weather-chip { display: none; }
   .rm-par-label { display: none; }
   .dc-actions .btn-ghost { white-space: nowrap; font-size: 14px; padding-inline: 8px; }
 }
+
+/* Non-modal learning guidance stays above the action bar and inside safe areas. */
+.learning-coach {
+  position: fixed; z-index: 45;
+  left: max(12px, env(safe-area-inset-left));
+  bottom: calc(86px + env(safe-area-inset-bottom));
+  width: min(440px, calc(100vw - 24px));
+  padding: 14px; border: 1px solid var(--sea);
+  border-radius: 12px; background: var(--paper); color: var(--paper-ink);
+  font-size: 14px; line-height: 1.5;
+}
+.learning-coach[hidden] { display: none; }
+.learning-coach p { margin: 6px 0 10px; }
+.learning-coach button { font-size: 13px; padding: 7px 10px; }
+@media (max-width: 600px), (max-height: 550px) {
+  .learning-coach { font-size: 12px; padding: 10px; max-height: 32vh; overflow-y: auto; }
+}

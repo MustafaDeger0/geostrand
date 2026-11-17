@@ -1,0 +1,25 @@
+name: Game quality
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, 'codex/**']
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: JavaScript syntax
+        run: find js server tests -name '*.js' -not -path '*/vendor/*' -print0 | xargs -0 -n1 node --check
+      - run: npm test
+      - name: Package shared web and Android assets
+        run: |
+          npm run build:www
+          test -f www/js/ui/LearningCoach.js
+          test -f www/js/ui/DailyChallenge.js

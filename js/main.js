@@ -37,6 +37,9 @@
   GS.trophies = new GS.Trophies(document, GS.achievements);
   GS.daily = new GS.DailyChallenge(document);
   GS.dailyRun = null;
+  GS.learningMode = false;
+  GS.daily.retryPending();
+  window.addEventListener('online', () => GS.daily.retryPending());
 
   /** localStorage kapalıysa (gizli sekme vb.) hata vermesin */
   function safeStorage() {
@@ -188,20 +191,42 @@
    * Günlük meydan okuma: hikâye animasyonu olmadan doğrudan günün 1. bölgesine.
    * Günün ilk denemesi sıralamaya girer; sonrakiler antrenmandır.
    */
-  function startDaily() {
-    if (GS.game || GS.creator.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen || GS.trophies.isOpen) return;
+  async function startDaily() {
+    if (GS.game || GS._startingDaily || GS.creator.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen || GS.trophies.isOpen) return;
     GS.audio.init();
     if (!GS.creator.hasSaved) {
       GS.creator.open({ mode: 'start', onSave: () => startDaily() });
       return;
     }
-    GS.dailyRun = GS.daily.createRun();
+    if (GS._startingDaily) return;
+    GS._startingDaily = true;
+    const button = document.getElementById('btn-daily');
+    button.disabled = true;
+    try {
+      GS.dailyRun = await GS.daily.prepareRun();
+      if (GS.game || !intro || GS.lobby.isOpen) return;
+      launch(false, 'GameScene');
+    } finally {
+      GS._startingDaily = false;
+      button.disabled = false;
+    }
+  }
+
+  function startLearning() {
+    if (GS.game || GS._startingDaily || GS.cutscene.isPlaying || GS.creator.isOpen || GS.lobby.isOpen || GS.guide.isOpen || GS.trophies.isOpen) return;
+    GS.audio.init();
+    if (!GS.creator.hasSaved) {
+      GS.creator.open({ mode: 'start', onSave: startLearning });
+      return;
+    }
+    GS.dailyRun = null;
+    GS.learningMode = true;
     launch(false, 'GameScene');
   }
 
   /** "Göreve başla": kâşif yoksa önce oluşturucu, sonra açılış animasyonu */
   function start() {
-    if (GS.game || GS.creator.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen || GS.trophies.isOpen) return;
+    if (GS._startingDaily || GS.game || GS.creator.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen || GS.trophies.isOpen) return;
     GS.audio.init(); // ilk tıklamada sesi hazırla
     if (GS.creator.hasSaved) {
       playStory();
@@ -226,7 +251,7 @@
   }
 
   async function startRace({ quickMatch = false } = {}) {
-    if (GS.game || GS.creator.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen) return;
+    if (GS._startingDaily || GS.game || GS.creator.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen) return;
     GS.audio.init();
     if (!GS.creator.hasSaved) {
       GS.creator.open({ mode: 'start', onSave: () => startRace({ quickMatch }) });
@@ -309,6 +334,7 @@
   };
 
   document.getElementById('btn-start').addEventListener('click', start);
+  document.getElementById('btn-learn').addEventListener('click', startLearning);
   document.getElementById('btn-daily').addEventListener('click', startDaily);
   document.getElementById('btn-trophies').addEventListener('click', () => GS.trophies.open(refreshIntroBadges));
   document.getElementById('btn-full').addEventListener('click', () => GS.toggleFullscreen());

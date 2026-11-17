@@ -5,3 +5,6 @@ www/
 *.jks
 *.keystore
 keystore-base64.txt
+
+# Local server state; set DAILY_DATA_DIR to a persistent volume in production.
+server/.data/

@@ -232,3 +232,66 @@ test('uygunsuz ad süzülür; iki şikâyetle ad değişir', () => {
   assert.equal(room.report(ids[1], bad.id).renamed, true);
   assert.match(room.players.get(bad.id).name, /^Kâşif \d+/);
 });
+
+
+test('rejoin: an unsolved returning player cancels the early end timer', () => {
+  const { room, clock } = makeRoom();
+  const a = room.addPlayer({ name: 'A' }).player;
+  const b = room.addPlayer({ name: 'B' }).player;
+  room.start(a.id);
+  clock.tick(R.countdownMs);
+  room.disconnect(b.id);
+  room.submitGuess(a.id, answer(room));
+  clock.tick(500);
+  room.rejoin(b.token);
+  clock.tick(1600);
+  assert.equal(room.phase, 'playing');
+  room.close();
+});
+
+test('rejoin snapshot: preserves clues, solved result and lock duration', () => {
+  const { room, clock } = makeRoom();
+  const a = room.addPlayer({ name: 'A' }).player;
+  room.addPlayer({ name: 'B' });
+  room.start(a.id);
+  clock.tick(R.countdownMs);
+  room.progress(a.id, 2, ['tree', 'soil', 'not-a-clue']);
+  room.submitGuess(a.id, { ...answer(room), climate: 'WRONG' });
+  let state = room.roundPayload(a.id).playerState;
+  assert.deepEqual(state.clues, ['tree', 'soil']);
+  assert.equal(state.lockMs, R.lockMs);
+  clock.tick(R.lockMs);
+  room.submitGuess(a.id, answer(room));
+  state = room.roundPayload(a.id).playerState;
+  assert.equal(state.solved, true);
+  assert.equal(state.points, 90);
+  room.close();
+});
+
+test('resume snapshot includes round results and new races have distinct match IDs', () => {
+  const { room, clock } = makeRoom();
+  const a = room.addPlayer({ name: 'A' }).player;
+  room.start(a.id);
+  const id = room.matchId;
+  clock.tick(R.countdownMs);
+  room.submitGuess(a.id, answer(room));
+  clock.tick(1500);
+  assert.equal(room.resumePayload().phase, 'roundEnd');
+  assert.equal(room.resumePayload().roundEnd.results[0].solved, true);
+  room._gameOver();
+  assert.equal(room.resumePayload().final.standings[0].id, a.id);
+  room.start(a.id);
+  assert.notEqual(room.matchId, id);
+  room.close();
+});
+
+test('guess cannot score after deadline even when the timer callback has not fired', () => {
+  let now = 1000;
+  const room = new RaceRoom({ code: 'LATE', emit() {}, clock: { now: () => now, setTimeout: () => 1, clearTimeout() {} } });
+  const a = room.addPlayer({ name: 'A' }).player;
+  room.start(a.id);
+  now = room.round.endAt + 1;
+  assert.match(room.submitGuess(a.id, answer(room)).error, /süresi/);
+  assert.equal(a.score, 0);
+  room.close();
+});

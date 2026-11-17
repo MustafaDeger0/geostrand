@@ -138,6 +138,7 @@ class RaceRoom {
     if (this.isPublic && this.phase === 'lobby') this._updateAutoStart();
     if (!this.players.get(this.hostId) || !this.players.get(this.hostId).connected) this.hostId = p.id;
     this.broadcastState();
+    if (this.phase === 'playing') this._maybeEndEarly();
     return p;
   }
 
@@ -270,6 +271,8 @@ class RaceRoom {
   }
 
   _startGame() {
+    this.matchId = randomToken();
+    this.lastRoundEnd = null;
     this._clearTimer('autoStart');
     this.autoStartAt = null;
     this.players.forEach((p) => {
@@ -325,10 +328,12 @@ class RaceRoom {
   }
 
   /** Tur bilgisi (sonradan katılana/yeniden bağlanana da gönderilir) */
-  roundPayload() {
+  roundPayload(playerId) {
     const r = this.round;
     const now = this.clock.now();
     return {
+      matchId: this.matchId,
+      playerState: playerId && this.players.has(playerId) ? this.playerRoundState(playerId) : undefined,
       index: r.index,
       total: r.total,
       locationId: r.location.id,
@@ -341,6 +346,17 @@ class RaceRoom {
     };
   }
 
+  playerRoundState(id) {
+    const p = this.players.get(id);
+    return { solved: p.solved, rank: p.rank, points: p.points, timeMs: p.timeMs,
+      clues: p.clues || [], lockMs: Math.max(0, p.lockUntil - this.clock.now()) };
+  }
+
+  resumePayload() {
+    return { phase: this.phase, matchId: this.matchId, roundEnd: this.lastRoundEnd,
+      final: { standings: this.standings(), isPublic: this.isPublic } };
+  }
+
   /**
    * Tahmin. Kararı sunucu verir.
    * @returns {object} ack: {ok, correct?, result?, rank?, timeMs?, points?, lockMs?, missing?, error?}
@@ -351,6 +367,7 @@ class RaceRoom {
     if (!p || this.phase !== 'playing' || !r) return { error: 'Şu an tahmin yapılamaz.' };
     const now = this.clock.now();
     if (now < r.startAt) return { error: 'Tur henüz başlamadı.' };
+    if (now >= r.endAt) return { error: 'Tur süresi doldu.' };
     if (p.solved) return { error: 'Bu turu zaten bildin.' };
     if (now < p.lockUntil) return { ok: true, locked: true, lockMs: p.lockUntil - now };
 
@@ -406,10 +423,14 @@ class RaceRoom {
   }
 
   /** Kaç ipucu buldu (sıralama tablosunda 🔍 2/4 olarak görünür) */
-  progress(id, found) {
+  progress(id, found, clues) {
     const p = this.players.get(id);
     if (!p || this.phase !== 'playing') return;
-    const n = Math.max(0, Math.min(5, Math.floor(Number(found) || 0)));
+    if (Array.isArray(clues)) {
+      const allowed = TIERS[this.round.tierIndex].clues;
+      p.clues = [...new Set(clues.filter((c) => allowed.includes(c)))];
+    }
+    const n = Math.max(0, Math.min(TIERS[this.round.tierIndex].clues.length, Math.floor(Number(found) || 0)));
     if (n === p.found) return;
     p.found = n;
     this.broadcastState();
@@ -423,6 +444,8 @@ class RaceRoom {
       this._setTimer('roundEnd', 1500, () => this._endRound('all-solved'));
     } else if (!active.length) {
       this._setTimer('roundEnd', 1000, () => this._endRound('empty'));
+    } else {
+      this._setTimer('roundEnd', Math.max(0, this.round.endAt - this.clock.now()), () => this._endRound('time'));
     }
   }
 
@@ -436,7 +459,7 @@ class RaceRoom {
     const results = [...this.players.values()]
       .map((p) => ({ id: p.id, name: p.name, solved: p.solved, rank: p.rank, timeMs: p.timeMs, wrongs: p.wrongs, points: p.points }))
       .sort((a, b) => (a.solved === b.solved ? (a.rank || 99) - (b.rank || 99) : a.solved ? -1 : 1));
-    this.emit('round:end', {
+    this.lastRoundEnd = {
       index: r.index,
       total: r.total,
       reason,
@@ -455,7 +478,8 @@ class RaceRoom {
       },
       results,
       standings: this.standings(),
-    });
+    };
+    this.emit('round:end', this.lastRoundEnd);
     this.broadcastState();
     this._setTimer('next', last ? 2500 : R.betweenRoundsMs, () => (last ? this._gameOver() : this._nextRound()));
   }
@@ -521,13 +545,14 @@ class RaceRoom {
 }
 
 function emptyRoundState() {
-  return { solved: false, rank: null, timeMs: null, wrongs: 0, found: 0, lockUntil: 0, points: 0 };
+  return { solved: false, rank: null, timeMs: null, wrongs: 0, found: 0, clues: [], lockUntil: 0, points: 0 };
 }
 
 /** Tarayıcıdan gelen tahmini yalnızca beklenen alanlar ve türlerle al */
 function sanitizeGuess(g) {
   const s = (v) => (typeof v === 'string' && v.length <= 24 ? v : undefined);
-  const lat = Number(g && g.latitude);
+  const rawLatitude = g && g.latitude;
+  const lat = rawLatitude === null || rawLatitude === '' || rawLatitude === undefined ? NaN : Number(rawLatitude);
   return {
     hemisphere: s(g && g.hemisphere),
     climate: s(g && g.climate),

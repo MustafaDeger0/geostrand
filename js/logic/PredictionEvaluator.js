@@ -28,13 +28,13 @@
       label: 'Yarım Küre',
       missing: 'Yarım küre seç',
       check: (g, loc) => g.hemisphere === loc.hemisphere,
-      hint: () => 'Gölge hangi yöne düşüyor? Gölge kutba bakar.',
+      hint: () => 'Ekinoks öğleninde gölge kutba yönelir: kuzeye uzanıyorsa Kuzey, güneye uzanıyorsa Güney Yarım Küre. Gölge kartındaki oku incele.',
     },
     climate: {
       label: 'İklim',
       missing: 'İklim seç',
       check: (g, loc) => g.climate === loc.climate,
-      hint: () => 'Bitki ve toprak etiketlerine tekrar bak.',
+      hint: () => 'Bitki ve toprağı birlikte karşılaştır: sürekli ıslak ve sık orman ile yazın kuru, sert yapraklı bitkiler farklı iklimleri gösterir. Rehberdeki iklim kartlarını kullan.',
     },
     latitude: {
       label: 'Enlem',
@@ -45,13 +45,13 @@
       label: 'Yer şekli',
       missing: 'Yer şekli seç',
       check: (g, loc) => g.landform === loc.landform,
-      hint: () => 'Yükselti ölçere bak: yükseklik ve eğim birlikte yer şeklini söyler.',
+      hint: () => 'Yükselti ölçerde yalnız yüksekliğe bakma: ova az eğimli, plato yüksek ve geniş düzlük, dağ ise dik ve engebelidir. Ölçerdeki eğim etiketlerini karşılaştır.',
     },
     continent: {
       label: 'Kıta',
       missing: 'Kıta seç',
       check: (g, loc) => g.continent === loc.continent,
-      hint: () => 'Hayvan izlerine bak: bu hayvanlar hangi kıtada yaşar?',
+      hint: () => 'Tek bir hayvan birden çok kıtada bulunabilir. Üç hayvanı birlikte değerlendir ve Rehber → Kıtalar bölümündeki örneklerle karşılaştır.',
     },
   };
 
@@ -76,7 +76,7 @@
       fields.forEach((f) => {
         if (f === 'latitude') {
           const lat = Number(g.latitude);
-          if (!Number.isFinite(lat) || lat < 0 || lat > 90) errors.push(FIELDS.latitude.missing);
+          if (g.latitude === null || g.latitude === '' || g.latitude === undefined || !Number.isFinite(lat) || lat < 0 || lat > 90) errors.push(FIELDS.latitude.missing);
         } else if (!g[f]) {
           errors.push(FIELDS[f].missing);
         }
@@ -129,8 +129,8 @@
         hint: ok
           ? null
           : direction === 'lower'
-            ? 'Daha küçük bir enlem dene (ekvatora yakın).'
-            : 'Daha büyük bir enlem dene (kutba yakın).',
+            ? 'Daha küçük bir enlem dene: ekvatora yaklaştıkça ekinoks öğleni gölgesi kısalır. Gölge/1 m çubuk oranını cetvelle karşılaştır.'
+            : 'Daha büyük bir enlem dene: kutba yaklaştıkça ekinoks öğleni gölgesi uzar. Gölge/1 m çubuk oranını cetvelle karşılaştır.',
       };
     }
   }
