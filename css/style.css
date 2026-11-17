@@ -1884,3 +1884,15 @@ body.race-mode .weather-chip { display: none; }
 @media (max-width: 600px), (max-height: 550px) {
   .learning-coach { font-size: 12px; padding: 10px; max-height: 32vh; overflow-y: auto; }
 }
+
+/* Keep learning actions legible on the light instruction panel. */
+.learning-coach .btn-ghost {
+  color: var(--paper-ink);
+  border-color: var(--paper-ink);
+  background: transparent;
+}
+.learning-coach .btn-ghost:hover,
+.learning-coach .btn-ghost:focus-visible {
+  color: var(--paper);
+  background: var(--paper-ink);
+}
