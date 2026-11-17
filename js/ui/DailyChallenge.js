@@ -23,6 +23,13 @@
     constructor(doc) {
       this.doc = doc;
       this.data = load();
+      this.data.pending = this.data.pending || {};
+      this.data.sessions = this.data.sessions || {};
+      this.data.startRequests = this.data.startRequests || {};
+      const keep = [D().dateKey(), D().shiftKey(D().dateKey(), -1)];
+      for (const group of [this.data.pending, this.data.sessions, this.data.startRequests]) {
+        for (const key of Object.keys(group)) if (!keep.includes(key)) delete group[key];
+      }
       if (!this.data.pid) {
         this.data.pid = randomId();
         save(this.data);
@@ -83,13 +90,60 @@
       return { key, plan: this.planFor(key), ranked: !this.data.played[key] && !this.data.started[key] };
     }
 
+    async prepareRun() {
+      await this.retryPending();
+      const run = this.createRun();
+      if (!run.ranked) return run;
+      if (!this.data.startRequests[run.key]) {
+        this.data.startRequests[run.key] = randomId();
+        save(this.data);
+      }
+      try {
+        const reply = await this._post({ action: 'start', date: run.key, pid: this.data.pid,
+          requestId: this.data.startRequests[run.key],
+          name: (GS.creator.current && GS.creator.current.name) || 'Kâşif' });
+        run.ranked = !!reply.available;
+        run.token = reply.token;
+        if (run.ranked) {
+          this.data.sessions[run.key] = run.token;
+          save(this.data);
+        } else run.message = 'Bugünkü sıralamalı hak kullanılmış; antrenman başlıyor.';
+      } catch (err) {
+        run.ranked = false;
+        run.message = 'Sunucuya ulaşılamadı; antrenman başlıyor. Bağlantı gelince sıralamalı denemeyi yeniden açabilirsin.';
+      }
+      return run;
+    }
+
+    async _post(body) {
+      const base = this._apiBase();
+      if (base === null) throw new Error('offline');
+      return request(base + '/api/daily/v2', { method: 'POST',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    }
+
+    guess(run, level, guess, requestId) {
+      return this._post({ action: 'guess', date: run.key, pid: this.data.pid,
+        token: run.token, level, guess, requestId });
+    }
+
+    async retryPending() {
+      for (const [key, pending] of Object.entries(this.data.pending)) {
+        try {
+          await this._post(pending);
+          delete this.data.pending[key];
+          save(this.data);
+        } catch (err) { /* Keep the same token for the next retry, including after reload. */ }
+      }
+    }
+
     /**
      * Sıralamalı hak YALNIZCA bir kez kullanılır: oyun başlarken "başladı" diye işaretlenir.
      * Yarıda bırakıp ("Baştan başla" / ana menü) yeniden denemek sıralamaya girmez.
      * @returns {boolean} bu oyun sıralamalı mı
      */
     claim(run) {
-      if (!run.ranked || run.claimed || this.data.started[run.key] || this.data.played[run.key]) return false;
+      if (!run.ranked || !run.token || run.claimed || this.data.started[run.key] || this.data.played[run.key]) return false;
       run.claimed = true;
       this.data.started[run.key] = true;
       const keys = Object.keys(this.data.started).sort();
@@ -117,6 +171,7 @@
       if (r.run.ranked && !this.data.played[key]) {
         // ranked: claim() ile bu oyuna verilmiş tek hak
         this.data.played[key] = entry;
+        this.data.pending[key] = { action: 'finish', date: key, pid: this.data.pid, token: r.run.token };
         // Eski günleri temizle (son 60 gün yeter)
         const keys = Object.keys(this.data.played).sort();
         while (keys.length > 60) delete this.data.played[keys.shift()];
@@ -148,7 +203,7 @@
         <div class="daily-card" tabindex="-1">
           <header class="guide-header">
             <h2>📅 Günlük meydan okuma · ${D().label(r.key)}</h2>
-            <span class="dc-tag ${r.ranked ? 'ranked' : 'practice'}">${r.ranked ? 'Sıralamaya girdi' : 'Antrenman'}</span>
+            <span class="dc-tag ${r.ranked ? 'ranked' : 'practice'}">${r.ranked ? 'Gönderiliyor…' : 'Antrenman'}</span>
           </header>
           <div class="dc-body">
             <div class="dc-top">
@@ -169,7 +224,7 @@
               <h4>🌍 Bugünün sıralaması</h4>
               <div id="dc-board" class="dc-board-list"><p class="dc-wait">Sıralama yükleniyor…</p></div>
             </section>
-            ${r.ranked ? '' : '<p class="dc-note">Bugünkü sıralamalı denemeni zaten yaptın; bu oyun antrenman sayıldı. Yarın yeni 5 bölge seni bekliyor!</p>'}
+            ${r.ranked ? '' : `<p class="dc-note">${esc(r.run.message || 'Bugünkü sıralamalı denemeni zaten yaptın; bu oyun antrenman sayıldı. Yarın yeni 5 bölge seni bekliyor!')}</p>`}
           </div>
           <footer class="dc-actions">
             <button type="button" class="btn-ghost" id="dc-share">📋 Sonucu kopyala</button>
@@ -224,31 +279,39 @@
 
     async _board(r) {
       const box = this.root.querySelector('#dc-board');
+      const tag = this.root.querySelector('.dc-tag');
       const base = this._apiBase();
       if (base === null) {
-        box.innerHTML = '<p class="dc-wait">Sıralama için oyunu internet adresinden aç.</p>';
+        box.textContent = 'Sıralama için internet bağlantısı gerekli.';
+        if (r.ranked) tag.textContent = 'Gönderilemedi';
         return;
       }
       const slow = setTimeout(() => {
-        if (box.querySelector('.dc-wait')) box.innerHTML = '<p class="dc-wait">Sunucu uyanıyor, bu 1 dakika kadar sürebilir…</p>';
+        if (this.isOpen) box.textContent = 'Sunucu uyanıyor, bu 1 dakika kadar sürebilir…';
       }, 4000);
       try {
+        const pending = this.data.pending[r.key];
         let res;
-        if (r.ranked) {
-          const name = (GS.creator.current && GS.creator.current.name) || 'Kâşif';
-          res = await request(`${base}/api/daily`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ date: r.key, pid: this.data.pid, name, ...r.entry }),
-          });
+        if (r.ranked && pending) {
+          res = await this._post(pending);
+          delete this.data.pending[r.key];
+          save(this.data);
         } else {
-          res = await request(`${base}/api/daily?date=${encodeURIComponent(r.key)}&pid=${encodeURIComponent(this.data.pid)}`);
+          res = await request(base + '/api/daily/v2?date=' + encodeURIComponent(r.key) + '&pid=' + encodeURIComponent(this.data.pid));
         }
         clearTimeout(slow);
+        if (r.ranked) tag.textContent = res.me ? 'Sıralamaya kaydedildi' : 'Kayıt bulunamadı';
         this._renderBoard(box, res);
-      } catch (e) {
+      } catch (err) {
         clearTimeout(slow);
-        box.innerHTML = '<p class="dc-wait">Sıralamaya şu an ulaşılamadı. Sonucun bu cihazda kayıtlı.</p>';
+        if (r.ranked) tag.textContent = 'Gönderilemedi';
+        box.textContent = 'Sonucun bu cihazda kayıtlı. Bağlantı gelince tekrar gönderebilirsin. ';
+        const retry = this.doc.createElement('button');
+        retry.type = 'button';
+        retry.className = 'btn-ghost';
+        retry.textContent = 'Tekrar dene';
+        retry.addEventListener('click', () => { retry.disabled = true; this._board(r); });
+        box.appendChild(retry);
       }
     }
 
@@ -276,8 +339,13 @@
     const t = ctrl ? setTimeout(() => ctrl.abort(), 75000) : null;
     try {
       const resp = await fetch(url, { ...opts, signal: ctrl ? ctrl.signal : undefined });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      return await resp.json();
+      const body = await resp.json();
+      if (!resp.ok || body.ok === false) {
+        const error = new Error(body.error || `HTTP ${resp.status}`);
+        error.lockMs = body.lockMs;
+        throw error;
+      }
+      return body;
     } finally {
       if (t) clearTimeout(t);
     }
@@ -286,7 +354,7 @@
   function load() {
     try {
       const raw = JSON.parse(window.localStorage.getItem(STORE_KEY) || 'null');
-      if (raw && typeof raw === 'object') return { pid: raw.pid || null, played: raw.played || {}, started: raw.started || {} };
+      if (raw && typeof raw === 'object') return { pid: raw.pid || null, played: raw.played || {}, started: raw.started || {}, pending: raw.pending || {}, sessions: raw.sessions || {}, startRequests: raw.startRequests || {} };
     } catch (e) { /* bozuk kayıt */ }
     return { pid: null, played: {}, started: {} };
   }
@@ -307,5 +375,6 @@
     return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  DailyChallenge.requestId = randomId;
   GS.DailyChallenge = DailyChallenge;
 })(window.GS = window.GS || {});

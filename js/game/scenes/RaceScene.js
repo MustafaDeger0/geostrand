@@ -36,6 +36,7 @@
 
       this._offs = [
         net.on('round:start', (r) => this._startRound(r)),
+        net.on('room:resume', (r) => this._resume(r)),
         net.on('room:state', (s) => {
           this.raceHud.renderBoard(s);
           this.ghosts.sync(s.players, net.playerId);
@@ -62,14 +63,27 @@
         this.raceHud.renderBoard(net.state);
       }
       // Tur, sahne kurulmadan önce gelmiş olabilir
-      if (net.lastRound) this._startRound(net.lastRound);
+      if (net.lastResume) this._resume(net.lastResume);
+      else if (net.lastRound) this._startRound(net.lastRound);
       else this.raceHud.showWaiting();
     }
 
     // ================================================================== //
     //  Tur
     // ================================================================== //
+    _resume(r) {
+      if (r.phase === 'roundEnd' && r.roundEnd) this._roundEnd(r.roundEnd);
+      else if (r.phase === 'gameOver') this._gameOver(r.final);
+    }
+
     _startRound(r) {
+      if (r.matchId !== this._matchId || (!r.matchId && r.index === 1 && this._raceCounted)) {
+        this._matchId = r.matchId;
+        this._raceCounted = false;
+      }
+      // Ignore a delayed answer belonging to the preceding round.
+      this._roundGeneration = (this._roundGeneration || 0) + 1;
+      this._sending = false;
       const location = GS.LOCATIONS.find((l) => l.id === r.locationId);
       if (!location) return;
       const tiers = this.cfg.PROGRESSION.tiers;
@@ -81,13 +95,29 @@
       this.raceSolved = false;
       this.raceLocked = true;
       this._sentFound = -1;
+      this._restoringRound = true;
       this._buildLocation(location, tier, weather, {
         crates: 0, label: `Tur ${r.index}/${r.total}`, levelNumber: r.index, seed: r.seed,
       });
       this.dayNight.hour = 10;              // yarışta hep gündüz: herkes aynı ışıkta görsün
       this.ghosts.resetAll(this.spawn.x, this.spawn.y);
       if (this.ghosts && this.net.state) this.ghosts.sync(this.net.state.players, this.net.playerId);
-      this.net.progress(0);
+      const restored = r.playerState;
+      if (restored) {
+        const clues = GS.ClueFactory.build(location, tier.clues, { landforms: GS.LANDFORMS });
+        for (const id of restored.clues || []) {
+          if (!clues[id]) continue;
+          this.found.add(id);
+          this.pad.addNote(clues[id]);
+          const obj = this.world.interactables.find((x) => x.type === id);
+          if (obj) obj.markInspected();
+        }
+        this.raceSolved = !!restored.solved;
+        if (restored.solved) this.pad.showRaceSolved(restored);
+        else if (restored.lockMs > 0) this.pad.lockSubmit(restored.lockMs);
+      }
+      this._restoringRound = false;
+      this._updateObjective();
 
       const timing = this.net.roundTiming() || { countdownLeft: r.countdownMs, playLeft: r.playMs };
       this.raceHud.startRound(r, timing);
@@ -100,6 +130,8 @@
     }
 
     _roundEnd(e) {
+      window.clearTimeout(this._unlockTimer);
+      this._roundGeneration = (this._roundGeneration || 0) + 1;
       this.raceLocked = true;
       this.pad.close();
       this.raceHud.showRoundEnd(e, this.net.playerId);
@@ -107,6 +139,8 @@
     }
 
     _gameOver(e) {
+      window.clearTimeout(this._unlockTimer);
+      this._roundGeneration = (this._roundGeneration || 0) + 1;
       this.raceLocked = true;
       this.pad.close();
       this.raceHud.showFinal(e.standings, this.net.playerId, this.net.isHost, e.isPublic);
@@ -131,9 +165,10 @@
       }
       this._sending = true;
       this.pad.setSending(true);
+      const generation = this._roundGeneration;
       const res = await this.net.submitGuess(guess);
+      if (!this.sys.isActive() || generation !== this._roundGeneration) return;
       this._sending = false;
-      if (!this.sys.isActive()) return;
       this.pad.setSending(false);
 
       if (res.error) {
@@ -199,9 +234,9 @@
         solvedTitle: 'Bildin!',
         solvedHint: 'Diğer kâşifler bekleniyor; tur bitince konum açıklanacak',
       });
-      if (this.net && this.found && this.found.size !== this._sentFound) {
+      if (!this._restoringRound && this.net && this.found && this.found.size !== this._sentFound) {
         this._sentFound = this.found.size;
-        this.net.progress(this.found.size);
+        this.net.progress(this.found.size, [...this.found]);
       }
     }
 

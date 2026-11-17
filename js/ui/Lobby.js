@@ -115,6 +115,7 @@
       if (this.net.session) {
         const res = await this.net.rejoin();
         if (res.ok) {
+          if (!this.isOpen) return; // A resume event may already have launched the game.
           this._view(res.isPublic ? 'quick' : 'room');
           return;
         }

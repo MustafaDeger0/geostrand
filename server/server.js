@@ -29,6 +29,7 @@ const os = require('os');
 const { Server } = require('socket.io');
 const { RaceRoom } = require('./RaceRoom.js');
 const { DailyBoard } = require('./DailyBoard.js');
+const { VerifiedDaily } = require('./VerifiedDaily.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const CODE_LETTERS = 'ABCDEFGHJKLMNPRSTUVYZ';   // karışabilecek harfler (I, O, Q…) yok
@@ -110,7 +111,7 @@ const API_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
 };
 
-function makeDailyApi(board) {
+function makeDailyApi(board, verified) {
   const buckets = new Map(); // IP → hız sınırlayıcı (dakikada ~30 istek)
   const limitFor = (ip) => {
     if (!buckets.has(ip)) {
@@ -137,7 +138,8 @@ function makeDailyApi(board) {
         send(res, 400, { error: 'date' });
         return;
       }
-      send(res, 200, board.board(date, url.searchParams.get('pid') || ''));
+      const target = url.pathname === '/api/daily/v2' ? verified.board : board;
+      send(res, 200, { ...target.board(date, url.searchParams.get('pid') || ''), verified: target === verified.board });
       return;
     }
     if (req.method !== 'POST') {
@@ -163,9 +165,14 @@ function makeDailyApi(board) {
         send(res, 400, { error: 'json' });
         return;
       }
-      const r = board.submit(body);
-      if (!r.ok) send(res, 400, { error: r.error });
-      else send(res, 200, r);
+      try {
+        const r = url.pathname === '/api/daily/v2' ? verified.handle(body) : board.submit(body);
+        if (!r.ok) send(res, 400, { error: r.error, missing: r.missing, lockMs: r.lockMs });
+        else send(res, 200, r);
+      } catch (err) {
+        console.error('[daily] storage failed:', err.message);
+        send(res, 503, { error: 'Sonuç kaydedilemedi. Tekrar dene.' });
+      }
     });
   };
 }
@@ -173,12 +180,16 @@ function makeDailyApi(board) {
 // ====================================================================== //
 //  3) Çevrim içi yarış
 // ====================================================================== //
-function createServer({ clock, rng, log = console.log, dailyNow } = {}) {
+function createServer({ clock, rng, log = console.log, dailyNow, dailyFile = null } = {}) {
   const dailyBoard = new DailyBoard(dailyNow ? { now: dailyNow } : {});
+  const verifiedDaily = new VerifiedDaily({ ...(dailyNow ? { now: dailyNow } : {}), file: dailyFile });
   // Kimse oynamasa bile eski günler saatte bir silinir
-  const pruneTimer = setInterval(() => dailyBoard._prune(), 60 * 60 * 1000);
+  const pruneTimer = setInterval(() => {
+    dailyBoard._prune();
+    try { verifiedDaily.save(); } catch (err) { log('[daily] cleanup failed:', err.message); }
+  }, 60 * 60 * 1000);
   if (pruneTimer.unref) pruneTimer.unref();
-  const dailyApi = makeDailyApi(dailyBoard);
+  const dailyApi = makeDailyApi(dailyBoard, verifiedDaily);
   const httpServer = http.createServer((req, res) => {
     let url;
     try {
@@ -187,7 +198,7 @@ function createServer({ clock, rng, log = console.log, dailyNow } = {}) {
       res.writeHead(400).end();
       return;
     }
-    if (url.pathname === '/api/daily') {
+    if (url.pathname === '/api/daily' || url.pathname === '/api/daily/v2') {
       dailyApi(req, res, url);
       return;
     }
@@ -245,14 +256,27 @@ function createServer({ clock, rng, log = console.log, dailyNow } = {}) {
 
     /** Odaya yerleştir ve ilk durumu gönder */
     function seat(room, player) {
-      leaveCurrent(false);
+      const current = sockets.get(socket.id);
+      if (!current || current.room !== room || current.playerId !== player.id) leaveCurrent(false);
+      // One active connection per session; an old socket must not disconnect its replacement.
+      for (const [id, s] of sockets) {
+        if (id !== socket.id && s.room === room && s.playerId === player.id) {
+          sockets.delete(id);
+          const previous = io.sockets.sockets.get(id);
+          if (previous) previous.disconnect(true);
+        }
+      }
       sockets.set(socket.id, { room, playerId: player.id });
       socket.join(`room:${room.code}`);
       // Yarış sürerken dönen oyuncu: mevcut turu da alsın
       // (Hızlı oda bu oyuncu gelince dolup başlamış olabilir: önce "başlıyor", sonra tur)
       if (room.phase === 'playing' && room.round) {
         socket.emit('game:starting', { code: room.code });
-        socket.emit('round:start', room.roundPayload());
+        socket.emit('round:start', room.roundPayload(player.id));
+      }
+      if (room.phase === 'roundEnd' || room.phase === 'gameOver') {
+        socket.emit('game:starting', { code: room.code });
+        socket.emit('room:resume', room.resumePayload());
       }
       room.broadcastState();
       return { ok: true, code: room.code, token: player.token, playerId: player.id, isPublic: room.isPublic };
@@ -337,7 +361,7 @@ function createServer({ clock, rng, log = console.log, dailyNow } = {}) {
 
     on('player:progress', 1, (p) => {
       const s = sockets.get(socket.id);
-      if (s) s.room.progress(s.playerId, p.found);
+      if (s) s.room.progress(s.playerId, p.found, p.clues);
     });
 
     // Konum: yalnızca aynı odadakilere aktarılır (hafif, kaybolabilir mesaj)
@@ -422,7 +446,7 @@ function rateLimiter(perSecond = 15, burst = 30) {
 // ====================================================================== //
 if (require.main === module) {
   const port = Number(process.env.PORT) || 3000;
-  const app = createServer();
+  const app = createServer({ dailyFile: path.join(process.env.DAILY_DATA_DIR || path.join(__dirname, '.data'), 'daily-v2.json') });
   app.listen(port, '0.0.0.0').then((p) => {
     console.log('\n  🧭 GeoStrand çevrim içi sunucu çalışıyor');
     console.log(`  Bu bilgisayarda:  http://localhost:${p}`);

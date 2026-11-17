@@ -22,7 +22,7 @@
   'use strict';
 
   const SESSION_KEY = 'geostrand-net';
-  const SERVER_EVENTS = ['room:state', 'game:starting', 'round:start', 'player:moved', 'player:solved', 'round:end', 'game:over', 'server:stats'];
+  const SERVER_EVENTS = ['room:state', 'game:starting', 'round:start', 'player:moved', 'player:solved', 'round:end', 'game:over', 'server:stats', 'room:resume'];
 
   /**
    * Sunucu adresi ('' = oyunun açıldığı adres).
@@ -71,6 +71,9 @@
       });
 
       SERVER_EVENTS.forEach((ev) => this.socket.on(ev, (payload) => {
+        if (ev === 'game:starting') { this.lastRound = null; this.lastResume = null; }
+        if (ev === 'room:resume') this.lastResume = payload;
+        if (ev === 'round:start') this.lastResume = null;
         if (ev === 'room:state') this.state = payload;
         if (ev === 'round:start') this.lastRound = { ...payload, receivedAt: performance.now() };
         if (ev === 'game:over' || ev === 'round:end') this.lastRound = ev === 'round:end' ? this.lastRound : null;
@@ -213,8 +216,8 @@
       if (this.connected) this.socket.volatile.emit('player:move', { x, y, f, m });
     }
 
-    progress(found) {
-      if (this.connected) this.socket.emit('player:progress', { found });
+    progress(found, clues) {
+      if (this.connected) this.socket.emit('player:progress', { found, clues });
     }
 
     /** Şu anki turun kalan süreleri (ms) */
