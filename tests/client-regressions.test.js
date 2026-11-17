@@ -12,6 +12,8 @@ const { LANDFORMS } = require('../js/data/landforms.js');
 
 function load(relative, GS, extra = {}) {
   const window = { GS, clearTimeout() {}, setTimeout() { return 1; } };
+  if (extra.crypto) window.crypto = extra.crypto;
+  if (extra.localStorage) window.localStorage = extra.localStorage;
   const context = { window, console, setTimeout: window.setTimeout, clearTimeout() {}, ...extra };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '..', relative), 'utf8'), context, { filename: relative });
   return GS;
@@ -111,12 +113,12 @@ function daily() {
   const doc = { createElement: () => root, body: { appendChild() {} } };
   const storage = { value: null, getItem() { return this.value; }, setItem(key, value) { this.value = value; } };
   load('js/ui/DailyChallenge.js', GS, {
-    localStorage: storage, Uint8Array,
+    localStorage: storage, Uint8Array, crypto: require('node:crypto').webcrypto,
   });
   // Constructor's storage accesses use window, so isolate state explicitly after construction.
   const instance = Object.create(GS.DailyChallenge.prototype);
   instance.doc = doc;
-  instance.data = { pid: 'ab'.repeat(12), played: {}, started: {}, pending: {}, sessions: {} };
+  instance.data = { pid: 'ab'.repeat(12), played: {}, started: {}, pending: {}, sessions: {}, startRequests: {} };
   return { GS, instance, storage };
 }
 
@@ -140,4 +142,23 @@ test('daily: pending finish is retained on failure and removed only after acknow
   instance._post = async () => ({ ok: true });
   await instance.retryPending();
   assert.equal(Object.keys(instance.data.pending).length, 0);
+});
+
+test('daily: a lost start acknowledgement retries with the same persisted request ID', async () => {
+  const { instance, storage } = daily();
+  instance.retryPending = async () => {};
+  instance.createRun = () => ({ key: '2026-11-17', ranked: true });
+  const ids = [];
+  instance._post = async (body) => {
+    ids.push(body.requestId);
+    if (ids.length === 1) throw new Error('lost acknowledgement');
+    return { ok: true, available: true, token: 'retried-token' };
+  };
+  assert.equal((await instance.prepareRun()).ranked, false);
+  const saved = JSON.parse(storage.value);
+  assert.equal(saved.startRequests['2026-11-17'], ids[0]);
+  const run = await instance.prepareRun();
+  assert.equal(run.ranked, true);
+  assert.equal(run.token, 'retried-token');
+  assert.equal(ids[0], ids[1]);
 });

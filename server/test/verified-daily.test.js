@@ -103,3 +103,33 @@ test('verified daily: a failed disk write rolls back the attempt so it can be re
     assert.equal(request({ action: 'finish' }).me.solved, 1);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('verified daily: lost start acknowledgement recovers only the same unused attempt', () => {
+  const server = new VerifiedDaily({ now: () => new Date(date + 'T10:00:00Z') });
+  const start = { action: 'start', date, pid, requestId: 'cc'.repeat(12) };
+  const first = server.handle(start);
+  const retry = server.handle(start);
+  assert.equal(retry.available, true);
+  assert.equal(retry.token, first.token);
+  assert.equal(server.handle({ ...start, requestId: 'dd'.repeat(12) }).available, false);
+});
+
+test('verified daily: uploading a completed run later does not extend its ranked time', () => {
+  const { request, answer, advance } = setup();
+  for (let level = 1; level <= 5; level++) {
+    advance(10000);
+    request({ action: 'guess', level, requestId: String(level).padStart(24, '0'), guess: answer(level) });
+  }
+  advance(120000);
+  assert.equal(request({ action: 'finish' }).me.timeMs, 50000);
+});
+
+test('verified daily: retrying a wrong acknowledgement returns the remaining cooldown', () => {
+  const { request, answer, advance } = setup();
+  const wrong = { action: 'guess', level: 1, requestId: 'ee'.repeat(12), guess: { ...answer(1), climate: 'WRONG' } };
+  assert.equal(request(wrong).lockMs, 8000);
+  advance(3000);
+  assert.equal(request(wrong).lockMs, 5000);
+  advance(5000);
+  assert.equal(request(wrong).lockMs, 0);
+});

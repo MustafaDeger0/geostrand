@@ -75,11 +75,20 @@ class VerifiedDaily {
     let run = this.runs.get(key);
     if (action === 'start') {
       if (date !== this.board.allowedDates()[0]) return { ok: false, error: 'date' };
-      if (run) return { ok: true, available: false };
+      if (run) {
+        // A lost start acknowledgement must not consume the first attempt.
+        if (!run.finished && !run.results.length && !run.wrongs &&
+          typeof body.requestId === 'string' && run.startRequest === body.requestId) {
+          return { ok: true, available: true, token: run.token };
+        }
+        return { ok: true, available: false };
+      }
       if (this.runs.size >= 40000) return { ok: false, error: 'full' };
       const startedAt = this.now().getTime();
       run = { date, pid, name: safeName(String(body.name || 'Kâşif').slice(0, 14)),
-        token: crypto.randomBytes(24).toString('hex'), startedAt, levelAt: startedAt,
+        token: crypto.randomBytes(24).toString('hex'),
+        startRequest: typeof body.requestId === 'string' && /^[a-f0-9]{16,48}$/.test(body.requestId) ? body.requestId : null,
+        startedAt, levelAt: startedAt,
         results: [], wrongs: 0, levelWrongs: 0, finished: false, score: 0 };
       this.runs.set(key, run);
       this.save();
@@ -89,7 +98,7 @@ class VerifiedDaily {
     if (action === 'finish') {
       if (!run.finished) {
         const result = this.board.submit({ date, pid, name: run.name, solved: run.results.length,
-          score: run.score, wrongs: run.wrongs, timeMs: Math.min(21600000, Math.max(0, this.now().getTime() - run.startedAt)) });
+          score: run.score, wrongs: run.wrongs, timeMs: Math.min(21600000, Math.max(0, (run.completedAt || this.now().getTime()) - run.startedAt)) });
         if (!result.ok) return result;
         run.finished = true;
         this.save();
@@ -99,7 +108,8 @@ class VerifiedDaily {
     if (action !== 'guess') return { ok: false, error: 'action' };
     // An acknowledgement lost in transit must not count a wrong twice or solve the next region.
     if (typeof body.requestId !== 'string' || !/^[a-f0-9]{16,48}$/.test(body.requestId)) return { ok: false, error: 'request' };
-    if (run.lastRequest === body.requestId) return run.lastResponse;
+    if (run.lastRequest === body.requestId) return { ...run.lastResponse,
+      lockMs: Math.max(0, (run.lockUntil || 0) - this.now().getTime()) };
     if (run.finished || body.level !== run.results.length + 1 || body.level > Daily.REGIONS) return { ok: false, error: 'level' };
     const now = this.now().getTime();
     if (now < (run.lockUntil || 0)) return { ok: false, error: 'Telsiz kilitli. Biraz bekle.', lockMs: run.lockUntil - now };
@@ -118,6 +128,7 @@ class VerifiedDaily {
       score.wrong = run.levelWrongs;
       scored = score.finishLevel(body.level, p.tierIndex);
       run.results.push(scored);
+      if (run.results.length === Daily.REGIONS) run.completedAt = this.now().getTime();
       run.score += scored.points;
       run.levelWrongs = 0;
       run.levelAt = this.now().getTime();

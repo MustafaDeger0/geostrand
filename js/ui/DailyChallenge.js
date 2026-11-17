@@ -25,8 +25,9 @@
       this.data = load();
       this.data.pending = this.data.pending || {};
       this.data.sessions = this.data.sessions || {};
+      this.data.startRequests = this.data.startRequests || {};
       const keep = [D().dateKey(), D().shiftKey(D().dateKey(), -1)];
-      for (const group of [this.data.pending, this.data.sessions]) {
+      for (const group of [this.data.pending, this.data.sessions, this.data.startRequests]) {
         for (const key of Object.keys(group)) if (!keep.includes(key)) delete group[key];
       }
       if (!this.data.pid) {
@@ -93,8 +94,13 @@
       await this.retryPending();
       const run = this.createRun();
       if (!run.ranked) return run;
+      if (!this.data.startRequests[run.key]) {
+        this.data.startRequests[run.key] = randomId();
+        save(this.data);
+      }
       try {
         const reply = await this._post({ action: 'start', date: run.key, pid: this.data.pid,
+          requestId: this.data.startRequests[run.key],
           name: (GS.creator.current && GS.creator.current.name) || 'Kâşif' });
         run.ranked = !!reply.available;
         run.token = reply.token;
@@ -104,7 +110,7 @@
         } else run.message = 'Bugünkü sıralamalı hak kullanılmış; antrenman başlıyor.';
       } catch (err) {
         run.ranked = false;
-        run.message = 'Sunucuya ulaşılamadı; sıralamalı hakkını harcamadan antrenman başlıyor.';
+        run.message = 'Sunucuya ulaşılamadı; antrenman başlıyor. Bağlantı gelince sıralamalı denemeyi yeniden açabilirsin.';
       }
       return run;
     }
@@ -218,7 +224,7 @@
               <h4>🌍 Bugünün sıralaması</h4>
               <div id="dc-board" class="dc-board-list"><p class="dc-wait">Sıralama yükleniyor…</p></div>
             </section>
-            ${r.ranked ? '' : '<p class="dc-note">Bugünkü sıralamalı denemeni zaten yaptın; bu oyun antrenman sayıldı. Yarın yeni 5 bölge seni bekliyor!</p>'}
+            ${r.ranked ? '' : `<p class="dc-note">${esc(r.run.message || 'Bugünkü sıralamalı denemeni zaten yaptın; bu oyun antrenman sayıldı. Yarın yeni 5 bölge seni bekliyor!')}</p>`}
           </div>
           <footer class="dc-actions">
             <button type="button" class="btn-ghost" id="dc-share">📋 Sonucu kopyala</button>
@@ -348,7 +354,7 @@
   function load() {
     try {
       const raw = JSON.parse(window.localStorage.getItem(STORE_KEY) || 'null');
-      if (raw && typeof raw === 'object') return { pid: raw.pid || null, played: raw.played || {}, started: raw.started || {}, pending: raw.pending || {}, sessions: raw.sessions || {} };
+      if (raw && typeof raw === 'object') return { pid: raw.pid || null, played: raw.played || {}, started: raw.started || {}, pending: raw.pending || {}, sessions: raw.sessions || {}, startRequests: raw.startRequests || {} };
     } catch (e) { /* bozuk kayıt */ }
     return { pid: null, played: {}, started: {} };
   }
