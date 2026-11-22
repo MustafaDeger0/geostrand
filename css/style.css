@@ -2066,6 +2066,7 @@ body.race-mode .race-board-panel {
   #hud .hero-head .region { font-size: 11px; margin-bottom: 0; line-height: 1.25; }
   #hud .meter { grid-template-columns: 16px 24px minmax(0, 1fr) 38px; gap: 5px; margin: 4px 0; }
   #hud .meter-name, #hud .meter-icon, #hud .meter-value { font-size: 12px; }
+  #hud .meter-name { display: inline; }
   #hud .meter-track { height: 8px; }
   #hud .penalty { margin-top: 6px; padding: 4px 6px; font-size: 11px; gap: 4px; }
   #hud .objective { width: min(430px, 100%); padding: 8px 10px; border-radius: 13px; }
