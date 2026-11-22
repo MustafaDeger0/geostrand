@@ -253,8 +253,8 @@
 
   /** Sunucuya yalnızca görünüm alanları gider */
   function strip(hero) {
-    const { skin, hairStyle, hairColor, hat, jacket, pack } = hero || {};
-    return { skin, hairStyle, hairColor, hat, jacket, pack };
+    const { skin, hairStyle, hairColor, hat, hatColor, jacket, pack } = hero || {};
+    return { skin, hairStyle, hairColor, hat, hatColor, jacket, pack };
   }
 
   NetClient.hasSession = () => !!loadSession();

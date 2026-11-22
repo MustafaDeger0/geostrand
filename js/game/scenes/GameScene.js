@@ -86,7 +86,7 @@
       // Telefon / tablet: kaydır (joystick) ya da dokunduğun yere yürü
       this.touch = new GS.TouchControls(this, this.player, {
         range: C.PLAYER.interactRange,
-        getTargets: () => (this.world ? [...this.world.interactables, ...this.world.crates] : []),
+        getTargets: () => (this.world ? [...this.world.interactables, ...this.world.crates, ...this.world.residents] : []),
         onInteract: (obj) => this.bus.emit(GS.EVENTS.INTERACT, obj),
       });
       this.lighting = new GS.LightingOverlay(this, C.DAY_NIGHT);
@@ -142,6 +142,14 @@
 
       // E tuşu: ipucu nesnesi → deftere yaz, görevi güncelle, Pad'i aç | sandık → eşya
       bus.on(E.INTERACT, (obj) => {
+        if (this._isBlocked() || this.survival.isDead) return;
+        if (obj.type === 'npc') {
+          this._setGameKeyboard(false);
+          this.touch.cancelMove();
+          GS.hub.open('dialogue', { resident: obj.resident, appearance: obj.appearance,
+            onClose: () => this._setGameKeyboard(true) });
+          return;
+        }
         if (obj.type === 'crate') {
           this._openCrate(obj);
           return;
@@ -272,7 +280,7 @@
 
     /** Zaman tamamen durur mu? (menü, rehber, karakter oluşturucu, uçuş) */
     _isHalted() {
-      return this._sending || this.cinematic || this.menu.isOpen || this.traveling || GS.guide.isOpen || GS.creator.isOpen;
+      return this._sending || this.cinematic || this.menu.isOpen || this.traveling || GS.guide.isOpen || GS.creator.isOpen || GS.hub.isOpen;
     }
 
     /** Oyuncu hareket edemez mi? (duraklama ya da Pad açık) */
@@ -528,7 +536,8 @@
       const finish = () => {
         if (done) return;
         done = true;
-        window.clearTimeout(this._travelTimer);
+        if (GS.hub.isOpen) GS.hub.close();
+      window.clearTimeout(this._travelTimer);
         this._travelSkipOff();
         if (!this.sys.isActive()) return;
         this.hud.hideTravel();
@@ -659,7 +668,7 @@
       // Sabit çizimleri resme dönüştür (her karede yeniden çizilmesin → kasma olmaz)
       this.worldBuilder.bake();
       this.worldCollider = this.physics.add.collider(this.player, this.world.obstacles);
-      this.interaction.setTargets([...this.world.interactables, ...this.world.crates]);
+      this.interaction.setTargets([...this.world.interactables, ...this.world.crates, ...this.world.residents]);
       this.levelSolved = false;
       this.levelWrongs = 0; // bu bölgedeki yanlış sayısı (ceza her yanlışta ağırlaşır)
       this.found = new Set();
@@ -780,8 +789,7 @@
     _editHero() {
       this.menu.close();
       this._setGameKeyboard(false);
-      GS.creator.open({
-        mode: 'edit',
+      GS.hub.open('profile', {
         onSave: (appearance) => {
           this.hero = appearance;
           this.player.setAppearance(appearance);

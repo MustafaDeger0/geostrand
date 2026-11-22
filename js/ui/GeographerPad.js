@@ -71,6 +71,7 @@
     /** @param {object|null} clue Az önce incelenen ipucu (P ile açılırsa null) */
     open(clue) {
       this._highlight(clue ? clue.id : null);
+      if (clue && clue.id === 'sunstick') this.doc.getElementById('shadow-guide').open = true;
       if (this.isOpen) return;
       this._returnFocus = this.doc.activeElement;
       this.isOpen = true;
@@ -100,6 +101,8 @@
       this.clueIds = tier.clues;
       this.fields = tier.fields;
       this.notes.clear();
+      this.doc.getElementById('shadow-length').value = '';
+      this.doc.getElementById('shadow-answer').textContent = 'Uzunluğu yaz → yaklaşık enlemi gör';
       this.el.location.textContent = label;
 
       // Kademeye göre sorular: açık olmayanlar gizlenir
@@ -327,6 +330,14 @@
         this._listeners.push([target, type, fn]);
       };
 
+      on(this.doc.getElementById('shadow-length'), 'input', (event) => {
+        const raw = event.target.value.trim().replace(',', '.');
+        const value = Number(raw);
+        this.doc.getElementById('shadow-answer').textContent =
+          raw && /^\\d+(\\.\\d+)?$/.test(raw) && Number.isFinite(value) && value >= 0
+            ? 'Yaklaşık ' + Math.round(Math.atan(value) * 180 / Math.PI) + '° enlem'
+            : '0 veya daha büyük bir gölge uzunluğu yaz.';
+      });
       on(this.el.close, 'click', () => this.close());
       on(this.el.guide, 'click', () => this.bus.emit(GS.EVENTS.UI_GUIDE, 'climates'));
       on(this.el.root, 'mousedown', (e) => {
