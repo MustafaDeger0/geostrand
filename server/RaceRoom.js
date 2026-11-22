@@ -66,9 +66,10 @@ class RaceRoom {
    * @param {{code:string, isPublic?:boolean, emit:Function, clock?:object, rng?:Function, onClosed?:Function}} opts
    *   emit(event, payload, toPlayerId?) — toPlayerId yoksa odadaki herkese
    */
-  constructor({ code, isPublic = false, emit, clock = defaultClock, rng = Math.random, onClosed }) {
+  constructor({ code, isPublic = false, worldVersion = 1, emit, clock = defaultClock, rng = Math.random, onClosed }) {
     this.code = code;
     this.isPublic = isPublic;
+    this.worldVersion = worldVersion;
     this.emit = emit;
     this.clock = clock;
     this.rng = rng;

@@ -156,3 +156,28 @@ test('çevrim içi: özel oda, hızlı eşleşme ve statik dosyalar', async (t) 
     assert.ok(replies.some((r) => r.error && /yavaş/.test(r.error)));
   });
 });
+
+test('harita sürümü: hızlı eşleşme ayrılır, özel oda ve yeniden bağlanma karışmaz', async (t) => {
+  const app = createServer({ log: () => {} });
+  const port = await app.listen(0, '127.0.0.1');
+  const url = `http://127.0.0.1:${port}`;
+  const [legacy, modern, peer, privateLegacy, privateModern, privatePeer] = Array.from({ length: 6 }, () => client(url));
+  t.after(async () => {
+    [legacy, modern, peer, privateLegacy, privateModern, privatePeer].forEach((socket) => socket.close());
+    await app.close();
+  });
+  const oldSeat = await legacy.call('quick:join', { name: 'Eski' });
+  const newSeat = await modern.call('quick:join', { name: 'Yeni', worldVersion: 2 });
+  const peerSeat = await peer.call('quick:join', { name: 'Eş', worldVersion: 2 });
+  assert.ok(oldSeat.ok && newSeat.ok && peerSeat.ok);
+  assert.notEqual(oldSeat.code, newSeat.code);
+  assert.equal(newSeat.code, peerSeat.code);
+  const oldRoom = await privateLegacy.call('room:create', { name: 'Eski özel' });
+  const newRoom = await privateModern.call('room:create', { name: 'Yeni özel', worldVersion: 2 });
+  assert.ok((await privatePeer.call('room:join', { code: oldRoom.code, name: 'Eş', worldVersion: 2 })).error);
+  assert.ok((await privateLegacy.call('room:join', { code: newRoom.code, name: 'Eski' })).error);
+  assert.ok((await privatePeer.call('room:join', { code: newRoom.code, name: 'Eş', worldVersion: 2 })).ok);
+  assert.ok((await privatePeer.call('room:rejoin', { code: oldRoom.code, token: oldRoom.token, worldVersion: 2 })).error);
+  assert.ok((await privatePeer.call('room:rejoin', { code: newRoom.code, token: newRoom.token })).error);
+  assert.ok((await privateModern.call('room:rejoin', { code: newRoom.code, token: newRoom.token, worldVersion: 2 })).ok);
+});

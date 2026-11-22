@@ -223,12 +223,13 @@ function createServer({ clock, rng, log = console.log, dailyNow, dailyFile = nul
     throw new Error('Oda kodu üretilemedi');
   }
 
-  function makeRoom(isPublic) {
+  function makeRoom(isPublic, worldVersion = 1) {
     if (rooms.size >= MAX_ROOMS) return null;
     const code = newCode();
     const room = new RaceRoom({
       code,
       isPublic,
+      worldVersion,
       clock,
       rng,
       emit: (event, payload) => io.to(`room:${code}`).emit(event, payload),
@@ -243,12 +244,12 @@ function createServer({ clock, rng, log = console.log, dailyNow, dailyFile = nul
   }
 
   /** Hızlı eşleşme: dolmamış, başlamamış bir herkese açık oda bul; yoksa aç */
-  function findQuickRoom() {
+  function findQuickRoom(worldVersion = 1) {
     let best = null;
     rooms.forEach((r) => {
-      if (r.acceptsQuickPlayers && (!best || r.connectedCount > best.connectedCount)) best = r;
+      if (r.worldVersion === worldVersion && r.acceptsQuickPlayers && (!best || r.connectedCount > best.connectedCount)) best = r;
     });
-    return best || makeRoom(true);
+    return best || makeRoom(true, worldVersion);
   }
 
   io.on('connection', (socket) => {
@@ -309,15 +310,18 @@ function createServer({ clock, rng, log = console.log, dailyNow, dailyFile = nul
     }
 
     on('quick:join', 3, (p, reply) => {
-      const room = findQuickRoom();
+      const room = findQuickRoom(p.worldVersion === 2 ? 2 : 1);
       if (!room) return reply({ error: 'Sunucu şu an çok yoğun, birazdan tekrar dene.' });
+      if (room.worldVersion !== (p.worldVersion === 2 ? 2 : 1)) {
+        return reply({ error: 'Harita sürümleri farklı. Birlikte oynamak için oyunu güncelleyin; web sürümündeyseniz sayfayı yenileyin.' });
+      }
       const { player, error } = room.addPlayer({ name: p.name, appearance: p.appearance });
       if (error) return reply({ error });
       reply(seat(room, player));
     });
 
     on('room:create', 3, (p, reply) => {
-      const room = makeRoom(false);
+      const room = makeRoom(false, p.worldVersion === 2 ? 2 : 1);
       if (!room) return reply({ error: 'Sunucu şu an çok yoğun, birazdan tekrar dene.' });
       const { player, error } = room.addPlayer({ name: p.name, appearance: p.appearance });
       if (error) return reply({ error });
@@ -328,6 +332,9 @@ function createServer({ clock, rng, log = console.log, dailyNow, dailyFile = nul
       const code = String(p.code || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
       const room = rooms.get(code);
       if (!room || room.isPublic) return reply({ error: 'Bu kodla bir oda bulunamadı.' });
+      if (room.worldVersion !== (p.worldVersion === 2 ? 2 : 1)) {
+        return reply({ error: 'Harita sürümleri farklı. Birlikte oynamak için oyunu güncelleyin; web sürümündeyseniz sayfayı yenileyin.' });
+      }
       const { player, error } = room.addPlayer({ name: p.name, appearance: p.appearance });
       if (error) return reply({ error });
       reply(seat(room, player));
@@ -336,6 +343,9 @@ function createServer({ clock, rng, log = console.log, dailyNow, dailyFile = nul
     on('room:rejoin', 2, (p, reply) => {
       const code = String(p.code || '').toUpperCase().slice(0, 4);
       const room = rooms.get(code);
+      if (room && room.worldVersion !== (p.worldVersion === 2 ? 2 : 1)) {
+        return reply({ error: 'Bu oturum farklı bir harita sürümüne ait. Yeni bir odaya katıl.' });
+      }
       const player = room && typeof p.token === 'string' ? room.rejoin(p.token) : null;
       if (!player) return reply({ error: 'Oturum bulunamadı.' });
       reply(seat(room, player));
