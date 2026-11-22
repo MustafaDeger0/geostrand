@@ -332,6 +332,9 @@ function createServer({ clock, rng, log = console.log, dailyNow, dailyFile = nul
       const code = String(p.code || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
       const room = rooms.get(code);
       if (!room || room.isPublic) return reply({ error: 'Bu kodla bir oda bulunamadı.' });
+      if (room.worldVersion !== (p.worldVersion === 2 ? 2 : 1)) {
+        return reply({ error: 'Harita sürümleri farklı. Birlikte oynamak için oyunu güncelleyin; web sürümündeyseniz sayfayı yenileyin.' });
+      }
       const { player, error } = room.addPlayer({ name: p.name, appearance: p.appearance });
       if (error) return reply({ error });
       reply(seat(room, player));
