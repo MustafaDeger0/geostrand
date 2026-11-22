@@ -5,7 +5,9 @@
 #
 # Ne üretir (Actions → bu çalıştırma → sayfanın altında Artifacts):
 #   • geostrand-android-aab  → Google Play'e yüklenecek dosya (app-release.aab)
-#   • geostrand-android-apk  → Telefonuna doğrudan kurup denemek için (app-debug.apk)
+#   • geostrand-android-apk  → Geliştirme APK'sı (app-debug.apk)
+#   • geostrand-android-release-apk → R8 açık, imzalı deneme APK'sı (app-release.apk)
+#   • geostrand-android-r8-report → Optimizasyon özeti ve hata çözümleme eşlemesi
 #
 # İmza için GitHub deposunda Settings → Secrets and variables → Actions'a şunları ekle
 # (değerler GITHUB-SECRETS.txt dosyasında):
@@ -101,7 +103,27 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon --stacktrace bundleRelease assembleDebug
+          ./gradlew --no-daemon --stacktrace bundleRelease assembleRelease assembleDebug
+
+      - name: R8 paketini doğrula
+        run: python3 scripts/verify-android-release.py
+
+      - name: Optimizasyon raporunu sakla
+        uses: actions/upload-artifact@v4
+        with:
+          name: geostrand-android-r8-report
+          path: |
+            android/app/build/outputs/mapping/release/
+            android/app/build/outputs/r8-verification/
+          if-no-files-found: error
+
+      - name: Optimize deneme dosyasını yükle (.apk)
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: geostrand-android-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
 
       - name: Google Play dosyasını yükle (.aab)
         uses: actions/upload-artifact@v4
