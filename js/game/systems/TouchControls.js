@@ -77,6 +77,7 @@
 
     cancelMove() {
       this.moveTo = null;
+      this.path = [];
       this.marker.setVisible(false);
     }
 
@@ -154,6 +155,13 @@
       } else {
         this.moveTo = { x: p.x, y: p.y, target: null };
       }
+      this.path = GS.Navigation.findPath(this.scene.world.navigation, this.player, this.moveTo,
+        this.moveTo.target ? this.range * 0.75 : 48);
+      if (!this.path.length) {
+        this.cancelMove();
+        this.scene.hud.toast('Bu noktaya yürünebilir bir yol yok. Kıyıda başka bir nokta seç.', 'info');
+        return;
+      }
       this._stuckTime = 0;
       this.marker.setPosition(this.moveTo.x, this.moveTo.y).setVisible(true).setScale(1.4).setAlpha(1);
       this.scene.tweens.add({ targets: this.marker, scale: 0.8, duration: 260, ease: 'Back.Out' });
@@ -226,7 +234,7 @@
       const py = this.player.y;
 
       // Hedef nesneye menzil içinde yaklaştıysa: dur ve incele
-      if (m.target) {
+      if (m.target && this.path.length <= 1) {
         const d = Phaser.Math.Distance.Between(px, py, m.x, m.y);
         if (d <= this.range * 0.85) {
           const target = m.target;
@@ -236,10 +244,13 @@
         }
       }
 
-      const dx = m.x - px;
-      const dy = m.y - py;
+      while (this.path.length > 1 && Math.hypot(this.path[0].x - px, this.path[0].y - py) < 4) this.path.shift();
+      const next = this.path[0];
+      if (!next) { this.cancelMove(); return this.vector; }
+      const dx = next.x - px;
+      const dy = next.y - py;
       const dist = Math.hypot(dx, dy);
-      if (dist < ARRIVE_PX) {
+      if (dist < 4 && this.path.length === 1) {
         this.cancelMove();
         return this.vector;
       }
@@ -252,8 +263,9 @@
         return this.vector;
       }
 
-      this.vector.x = dx / dist;
-      this.vector.y = dy / dist;
+      const pace = Math.min(1, dist / Math.max(1, this.player.cfg.speed * dt));
+      this.vector.x = (dx / Math.max(dist, 0.01)) * pace;
+      this.vector.y = (dy / Math.max(dist, 0.01)) * pace;
       return this.vector;
     }
 

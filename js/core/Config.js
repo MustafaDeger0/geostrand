@@ -22,8 +22,8 @@
       outerMargin: 1200,      // Harita dışında kameranın gösterebileceği koyu kenar alanı (kâşif hep ortada kalsın)
       decorCount: 320,        // Haritaya serpiştirilen süs nesnesi sayısı
       extraTreeCount: 16,     // İpucu taşımayan, sadece atmosfer için ağaçlar
-      clueMinDistance: 170,   // İpucu nesneleri doğuş noktasına en az bu kadar uzak
-      clueMaxDistance: 540,   // ...ve en fazla bu kadar uzak
+      clueMinDistance: 260,   // İpucu nesneleri doğuş noktasına en az bu kadar uzak
+      clueMaxDistance: 760,   // ...ve en fazla bu kadar uzak
     },
 
     /** Ekran kenarındaki sarı yön okları: bu bölgeye kadar (dahil) gösterilir. Çevrim içinde hiç yok. */

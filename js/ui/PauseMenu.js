@@ -93,6 +93,11 @@
       if (this.isOpen) return;
       this.isOpen = true;
       this._resetConfirms();
+      const settings = GS.audio.getSettings();
+      this.el.sliders.forEach((input) => {
+        input.value = Math.round(settings[input.dataset.channel] * 100);
+        this._showValue(input);
+      });
       this.el.root.classList.remove('hidden');
       this.el.resume.focus();
       this.bus.emit(GS.EVENTS.MENU_OPENED);

@@ -39,6 +39,7 @@
       { key: 'cap', label: 'Kep' },
       { key: 'none', label: 'Şapkasız' },
     ],
+    hatColor: ['#c9a35a', '#2f6fd6', '#2e8b57', '#c0392b', '#7d4fb5', '#e8dcc4'],
     jacket: ['#e0782f', '#2f6fd6', '#2e8b57', '#c0392b', '#7d4fb5', '#d9a520'],
     pack: ['#4b5d3a', '#7a4a2a', '#2c3e50', '#9c2f2f'],
   };
@@ -49,6 +50,7 @@
     hairStyle: 'short',
     hairColor: OPTIONS.hairColor[1],
     hat: 'safari',
+    hatColor: OPTIONS.hatColor[0],
     jacket: OPTIONS.jacket[0],
     pack: OPTIONS.pack[0],
   };
@@ -288,25 +290,25 @@
   /** @param {'front'|'back'|'side'} view */
   function drawHat(ctx, a, cx, cy, r, view) {
     if (a.hat === 'safari') {
-      const brim = '#a9843f';
-      const crown = '#c9a35a';
+      const brim = shade(a.hatColor, -0.18);
+      const crown = a.hatColor;
       ctx.fillStyle = brim;
       ellipse(ctx, cx, cy - 4.5, r + 5, 3.6);
       ctx.fillStyle = crown;
       halfDome(ctx, cx, cy - 4, r - 0.5, 6.5);
-      ctx.fillStyle = '#6b4d22';
+      ctx.fillStyle = shade(a.hatColor, -0.48);
       ctx.fillRect(cx - r + 0.6, cy - 6, (r - 0.6) * 2, 1.8); // bant
     } else if (a.hat === 'beanie') {
-      ctx.fillStyle = a.jacket;
+      ctx.fillStyle = a.hatColor;
       halfDome(ctx, cx, cy - 1.5, r + 1, r);
-      ctx.fillStyle = shade(a.jacket, -0.2);
+      ctx.fillStyle = shade(a.hatColor, -0.2);
       roundRect(ctx, cx - r - 1, cy - 3.5, (r + 1) * 2, 3.5, 1.5);
       ctx.fillStyle = '#f2efe6';
       circle(ctx, view === 'side' ? cx - 2 : cx, cy - r - 2.5, 2.6); // ponpon
     } else if (a.hat === 'cap') {
-      ctx.fillStyle = a.jacket;
+      ctx.fillStyle = a.hatColor;
       halfDome(ctx, cx, cy - 1.5, r + 0.8, r - 0.5);
-      ctx.fillStyle = shade(a.jacket, -0.3);
+      ctx.fillStyle = shade(a.hatColor, -0.3);
       if (view === 'front') ellipse(ctx, cx, cy - 2, 6.5, 2.3);
       if (view === 'side') ellipse(ctx, cx + r + 1.5, cy - 2.5, 5, 1.8);
     }
@@ -365,7 +367,9 @@
   // ==================================================================== //
 
   function normalize(a) {
-    return { ...DEFAULT, ...(a || {}) };
+    const out = { ...DEFAULT, ...(a || {}) };
+    if (!OPTIONS.hatColor.includes(out.hatColor)) out.hatColor = DEFAULT.hatColor;
+    return out;
   }
 
   function randomAppearance(rng = Math.random) {
@@ -376,13 +380,14 @@
       hairStyle: pick(OPTIONS.hairStyle).key,
       hairColor: pick(OPTIONS.hairColor),
       hat: pick(OPTIONS.hat).key,
+      hatColor: pick(OPTIONS.hatColor),
       jacket: pick(OPTIONS.jacket),
       pack: pick(OPTIONS.pack),
     };
   }
 
   function hash(a) {
-    const str = [a.skin, a.hairStyle, a.hairColor, a.hat, a.jacket, a.pack].join('|');
+    const str = [a.skin, a.hairStyle, a.hairColor, a.hat, normalize(a).hatColor, a.jacket, a.pack].join('|');
     let h = 0;
     for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
     return (h >>> 0).toString(36);

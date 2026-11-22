@@ -36,6 +36,7 @@
   GS.achievements = new GS.Achievements(safeStorage());
   GS.trophies = new GS.Trophies(document, GS.achievements);
   GS.daily = new GS.DailyChallenge(document);
+  GS.hub = new GS.PlayerHub(document);
   GS.dailyRun = null;
   GS.learningMode = false;
   GS.daily.retryPending();
@@ -192,7 +193,7 @@
    * Günün ilk denemesi sıralamaya girer; sonrakiler antrenmandır.
    */
   async function startDaily() {
-    if (GS.game || GS._startingDaily || GS.creator.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen || GS.trophies.isOpen) return;
+    if (GS.hub.isOpen || GS.game || GS._startingDaily || GS.creator.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen || GS.trophies.isOpen) return;
     GS.audio.init();
     if (!GS.creator.hasSaved) {
       GS.creator.open({ mode: 'start', onSave: () => startDaily() });
@@ -213,7 +214,7 @@
   }
 
   function startLearning() {
-    if (GS.game || GS._startingDaily || GS.cutscene.isPlaying || GS.creator.isOpen || GS.lobby.isOpen || GS.guide.isOpen || GS.trophies.isOpen) return;
+    if (GS.hub.isOpen || GS.game || GS._startingDaily || GS.cutscene.isPlaying || GS.creator.isOpen || GS.lobby.isOpen || GS.guide.isOpen || GS.trophies.isOpen) return;
     GS.audio.init();
     if (!GS.creator.hasSaved) {
       GS.creator.open({ mode: 'start', onSave: startLearning });
@@ -226,7 +227,7 @@
 
   /** "Göreve başla": kâşif yoksa önce oluşturucu, sonra açılış animasyonu */
   function start() {
-    if (GS._startingDaily || GS.game || GS.creator.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen || GS.trophies.isOpen) return;
+    if (GS.hub.isOpen || GS._startingDaily || GS.game || GS.creator.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen || GS.trophies.isOpen) return;
     GS.audio.init(); // ilk tıklamada sesi hazırla
     if (GS.creator.hasSaved) {
       playStory();
@@ -251,7 +252,7 @@
   }
 
   async function startRace({ quickMatch = false } = {}) {
-    if (GS._startingDaily || GS.game || GS.creator.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen) return;
+    if (GS.hub.isOpen || GS._startingDaily || GS.game || GS.creator.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen) return;
     GS.audio.init();
     if (!GS.creator.hasSaved) {
       GS.creator.open({ mode: 'start', onSave: () => startRace({ quickMatch }) });
@@ -301,6 +302,7 @@
     if (GS.trophies.isOpen) return GS.trophies.close();
     if (GS.daily.isOpen) return GS.returnToMainMenu();
     if (GS.creator.isOpen) return GS.creator.close(false);
+    if (GS.hub.isOpen) return GS.hub.close();
     if (GS.guide.isOpen) return GS.guide.close();
     if (GS.lobby.isOpen) {
       if (GS.lobby.view === 'choose') GS.lobby.close();
@@ -339,13 +341,14 @@
   document.getElementById('btn-trophies').addEventListener('click', () => GS.trophies.open(refreshIntroBadges));
   document.getElementById('btn-full').addEventListener('click', () => GS.toggleFullscreen());
   document.getElementById('btn-guide').addEventListener('click', () => GS.guide.open('play'));
-  document.getElementById('btn-hero').addEventListener('click', () => GS.creator.open({ mode: 'edit' }));
+  document.getElementById('btn-hero').addEventListener('click', () => GS.hub.open('profile'));
+  document.getElementById('btn-settings').addEventListener('click', () => GS.hub.open('settings'));
   document.addEventListener('keydown', function onIntroKey(e) {
     if (GS.game) {
       document.removeEventListener('keydown', onIntroKey);
       return;
     }
-    if (GS.creator.isOpen || GS.guide.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen || GS.trophies.isOpen) return;
+    if (GS.hub.isOpen || GS.creator.isOpen || GS.guide.isOpen || GS.cutscene.isPlaying || GS.lobby.isOpen || GS.trophies.isOpen) return;
     if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') start();
     if (e.key === 'f' || e.key === 'F') GS.toggleFullscreen();
   });

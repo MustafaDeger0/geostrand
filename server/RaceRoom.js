@@ -54,7 +54,7 @@ function cleanName(name) {
 function cleanAppearance(a) {
   const out = {};
   if (a && typeof a === 'object') {
-    ['skin', 'hairStyle', 'hairColor', 'hat', 'jacket', 'pack'].forEach((k) => {
+    ['skin', 'hairStyle', 'hairColor', 'hat', 'hatColor', 'jacket', 'pack'].forEach((k) => {
       if (typeof a[k] === 'string' && a[k].length <= 20 && /^[#\w-]+$/.test(a[k])) out[k] = a[k];
     });
   }

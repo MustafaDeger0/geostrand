@@ -160,8 +160,15 @@
           <!-- Kartlar GeographerPad.js tarafından kademeye göre üretilir (3–5 adet) -->
           <div class="slots" id="pad-slots"></div>
 
-          <details class="pad-hint" open>
-            <summary>📐 Gölgeden enlem bul</summary>
+          <details class="pad-hint shadow-guide" id="shadow-guide" open>
+            <summary>📐 Gölgeden enlem bul · ölç ve karşılaştır</summary>
+            <ol class="shadow-steps"><li>Haritadaki güneş çubuğunu incele.</li><li>Gölge <b>kuzeye</b> ise Kuzey; <b>güneye</b> ise Güney Yarım Küre.</li><li>1 m çubuğun gölge uzunluğunu aşağıdaki cetvelle karşılaştır.</li></ol>
+            <div class="shadow-calculator">
+              <label for="shadow-length">Ölçtüğün gölge (metre)</label>
+              <input id="shadow-length" type="text" inputmode="decimal" maxlength="8" placeholder="Örn. 0,58" autocomplete="off">
+              <output id="shadow-answer" for="shadow-length" aria-live="polite">Uzunluğu yaz → yaklaşık enlemi gör</output>
+            </div>
+            <p class="hub-note">Bu hesap oyundaki ekinoks öğleni ve 1 m çubuk içindir. Sonucu tahmin bölümündeki enlemden seç.</p>
             <p class="hint-rules">Gölge <b>kutba</b> doğru düşer. Gölge uzadıkça enlem büyür.</p>
             <div class="ruler" role="table" aria-label="Gölge uzunluğu ve enlem">
               <div class="ruler-row" role="row"><span role="rowheader">Gölge (m)</span><span>0</span><span>0,18</span><span>0,36</span><span>0,58</span><span>0,84</span><span>1,19</span><span>1,73</span><span>2,75</span></div>
@@ -233,7 +240,7 @@
 
       <div class="menu-row">
         <button type="button" class="btn-ghost" id="menu-guide">📖 Rehber</button>
-        <button type="button" class="btn-ghost" id="menu-hero">🧭 Kâşifi düzenle</button>
+        <button type="button" class="btn-ghost" id="menu-hero">👤 Profilim</button>
       </div>
 
       <div class="menu-row">
@@ -440,7 +447,8 @@
           <span class="bd-streak hidden" id="daily-streak" title="Üst üste katıldığın gün">🔥 0</span>
         </button>
         <button type="button" class="btn-ghost" id="btn-trophies">🏅 Rozetler <span class="bt-count" id="trophy-count"></span></button>
-        <button type="button" class="btn-ghost" id="btn-hero">🧭 Kâşif<span class="wide-only">i düzenle</span></button>
+        <button type="button" class="btn-ghost" id="btn-hero">👤 Profilim</button>
+        <button type="button" class="btn-ghost" id="btn-settings">⚙ Ayarlar</button>
         <button type="button" class="btn-ghost" id="btn-guide">📖 Rehber</button>
         <button type="button" class="btn-ghost icon" id="btn-full" aria-label="Tam ekran">⛶</button>
       </div>
@@ -512,6 +520,7 @@
   <script src="js/core/SeededRandom.js"></script>
   <script src="js/data/climates.js"></script>
   <script src="js/data/locations.js"></script>
+  <script src="js/data/residents.js"></script>
   <script src="js/data/musicThemes.js"></script>
   <script src="js/data/landforms.js"></script>
   <script src="js/data/weather.js"></script>
@@ -522,6 +531,7 @@
   <script src="js/logic/DayNightCycle.js"></script>
   <script src="js/logic/PredictionEvaluator.js"></script>
   <script src="js/logic/ClueFactory.js"></script>
+  <script src="js/logic/Navigation.js"></script>
   <script src="js/logic/Inventory.js"></script>
   <script src="js/logic/LocationManager.js"></script>
   <script src="js/logic/Progression.js"></script>
@@ -556,6 +566,7 @@
   <script src="js/ui/PauseMenu.js"></script>
   <script src="js/ui/OffscreenIndicators.js"></script>
   <script src="js/ui/CharacterCreator.js"></script>
+  <script src="js/ui/PlayerHub.js"></script>
   <script src="js/ui/Guide.js"></script>
   <script src="js/ui/IntroCutscene.js"></script>
   <script src="js/ui/RaceHUD.js"></script>

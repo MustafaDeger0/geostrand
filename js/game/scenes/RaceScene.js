@@ -209,7 +209,7 @@
     }
 
     _isBlocked() {
-      return this.raceLocked || this.pad.isOpen || this.menu.isOpen || GS.guide.isOpen || GS.creator.isOpen
+      return this.raceLocked || this.pad.isOpen || this.menu.isOpen || GS.guide.isOpen || GS.creator.isOpen || GS.hub.isOpen
         || (GS.lobby && GS.lobby.isOpen);
     }
 

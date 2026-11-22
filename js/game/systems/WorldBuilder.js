@@ -56,6 +56,7 @@
       this.blockers = [];      // yerleşim için dolu alanlar {x, y, r}
       this.solids = [];        // süs nesnelerinin üstüne konmayacağı katı alanlar
       this.water = [];         // ses için su daireleri {x, y, r}
+      this.cluePoints = [];
       this.channel = null;     // nehir ya da kanyon eğrisi (tarlalar yanına dizilir)
       this.obstacles = scene.physics.add.staticGroup();
       this.shines = [];
@@ -81,12 +82,15 @@
       // (ör. plato kanyonunun öbür yakasında, dağlarla çevrili bir cepte kalmasın)
       this._buildWalkMap();
 
+      const residents = this._buildSettlement(location);
+      this._buildWalkMap();
+
       // 7) İpucu nesneleri (kademeye göre 3–5 adet)
       const treeTexture = `tree_${location.treeStyle}`;
       const ring = { minFromSpawn: this.cfg.clueMinDistance, maxFromSpawn: this.cfg.clueMaxDistance };
       const TEX = { tree: treeTexture, soil: 'soil', sunstick: 'sunstick', altimeter: 'altimeter', fauna: 'tracks' };
       const interactables = Object.values(clues).map((clue) => {
-        const p = this._reserve(clue.id === 'tree' ? 45 : 40, { ...ring, reachable: true });
+        const p = this._reserveClue(clue.id === 'tree' ? 45 : 40, ring);
         const obj = this._track(new GS.Interactable(scene, p.x, p.y, {
           type: clue.id,
           texture: TEX[clue.id],
@@ -121,8 +125,14 @@
         if (!p) continue;
         const deco = this._track(scene.add.image(p.x, p.y, treeTexture).setDepth(p.y).setScale(Phaser.Math.FloatBetween(0.8, 1.05)));
         this._addObstacle(deco, 0.22);
+        this._buildWalkMap();
+        if ([...interactables, ...crateObjs, ...residents].some((obj) =>
+          !this._isReachable(obj.x, obj.y + obj.displayHeight * 0.25))) {
+          this.obstacles.remove(deco, true, true);
+        }
       }
       this._buildDecor(climate);
+      this._buildWalkMap(); // navigation includes houses, clues and decorative tree trunks
       const fog = this._track(scene.add.graphics().setDepth(3800));
       const edgeColor = Phaser.Display.Color.IntegerToColor(climate.groundColor).darken(40).color;
       TP().drawEdgeFog(fog, this.cfg.width, this.cfg.height, edgeColor);
@@ -170,6 +180,8 @@
         location,
         terrain,
         interactables,           // ipucu nesneleri
+        residents,
+        navigation: this.walk,
         crates: crateObjs,       // yardım sandıkları
         obstacles,
         /** Her karede: güneş çubuğu gölgesi ışığa göre görünür/kaybolur */
@@ -506,6 +518,78 @@
      * _findSpot + bulunan noktayı engel listesine ekler.
      * İpucu nesneleri için mutlaka bir yer bulunur: halka dolu ise kısıt gevşetilir.
      */
+
+    /** Spread mandatory clues independently; preserve a reachable approach point. */
+    _reserveClue(r, ring) {
+      let best = null, bestSpacing = -1;
+      const consider = (p) => {
+        if (!p || !this._isReachable(p.x, p.y + 10)) return;
+        const spacing = this.cluePoints.length
+          ? Math.min(...this.cluePoints.map((q) => Math.hypot(q.x - p.x, q.y - p.y))) : Infinity;
+        if (spacing > bestSpacing) { best = p; bestSpacing = spacing; }
+      };
+      for (let i = 0; i < 80; i++) {
+        consider(this._findSpot(r, { margin: 80, ...ring }));
+        if (bestSpacing >= 300) break;
+      }
+      // Deterministic scan of the reachable component if the preferred ring is crowded.
+      if (bestSpacing < 300) {
+        for (let y = 96; y < this.cfg.height - 80; y += 64) {
+          for (let x = 96; x < this.cfg.width - 80; x += 64) {
+            if (Math.hypot(x - this.spawn.x, y - this.spawn.y) < ring.minFromSpawn ||
+              this._insideAny(this.blockers, x, y, r)) continue;
+            consider({ x, y });
+          }
+        }
+      }
+      if (!best) throw new Error('No reachable clue placement');
+      this.cluePoints.push(best);
+      this.blockers.push({ ...best, r: Math.max(r, 110) });
+      return best;
+    }
+
+    /** Small optional settlements, kept clear of spawn, clues and terrain obstacles. */
+    _buildSettlement(location) {
+      const residents = [];
+      for (let i = 0; i < 2; i++) {
+        let p = null;
+        for (let attempt = 0; attempt < 30; attempt++) {
+          const q = this._findSpot(120, { minFromSpawn: 360, maxFromSpawn: 1100, margin: 160 });
+          if (!q) break;
+          if (this._isReachable(q.x + 78, q.y + 48)) { p = q; break; }
+        }
+        if (!p) continue;
+        this.blockers.push({ ...p, r: 135 });
+        const cold = ['TUNDRA', 'SERT_KARASAL'].includes(location.climate);
+        const wall = cold ? 0xd7dace : 0xe9c89a;
+        const roof = cold ? 0x5f7180 : 0xa7563f;
+        const g = this._track(this.scene.add.graphics().setDepth(p.y + 25));
+        g.fillStyle(0x08181b, 0.25).fillEllipse(p.x + 5, p.y + 36, 110, 30);
+        g.fillStyle(wall).fillRoundedRect(p.x - 42, p.y - 24, 84, 60, 4);
+        g.fillStyle(roof).fillTriangle(p.x - 52, p.y - 22, p.x, p.y - 64, p.x + 52, p.y - 22);
+        g.fillStyle(0x68452f).fillRect(p.x - 10, p.y + 3, 21, 33);
+        g.fillStyle(0x8bd2d5).fillRect(p.x - 32, p.y - 8, 15, 18).fillRect(p.x + 18, p.y - 8, 15, 18);
+        g.lineStyle(2, 0x507780).strokeRect(p.x - 32, p.y - 8, 15, 18).strokeRect(p.x + 18, p.y - 8, 15, 18);
+        this._addCircleBlocker(p.x, p.y + 6, 43);
+        // Physical blockers also reserve space for following decorations.
+        this.solids.push({ x: p.x, y: p.y, r: 55 });
+        const appearance = GS.CharacterRenderer.normalize({
+          name: i ? 'Deniz' : 'Ada', hat: i ? 'cap' : 'none',
+          hatColor: i ? '#2e8b57' : '#c9a35a', jacket: i ? '#2f6fd6' : '#7d4fb5',
+          hairStyle: i ? 'short' : 'bun', skin: i ? '#c98d5f' : '#e9b88f',
+        });
+        const texture = GS.CharacterRenderer.buildSpritesheet(this.scene, appearance);
+        const npc = this._track(new GS.Interactable(this.scene, p.x + 78, p.y + 48, {
+          type: 'npc', texture, frame: 'down-0', prompt: appearance.name + ' ile konuş',
+          clue: null, marker: { text: '…', color: '#8bd2d5' },
+        }));
+        npc.resident = GS.Residents.dialogue(location, i);
+        npc.appearance = appearance;
+        residents.push(npc);
+      }
+      return residents;
+    }
+
     _reserve(r, opts, optional = false) {
       let p = null;
       if (opts.reachable && this.walk) {
@@ -583,7 +667,7 @@
           stack.push(n);
         }
       }
-      this.walk = { C, cols, rows, seen };
+      this.walk = { C, cols, rows, seen, blocked };
     }
 
     /** Bu noktanın etkileşim menzilinde yürüyerek ulaşılabilen bir hücre var mı? */

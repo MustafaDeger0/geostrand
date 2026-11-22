@@ -22,8 +22,8 @@
      *          marker?:{text:string, color:string}}} options
      *   marker: üstteki işaretin metni/rengi (ipuçları "?" sarı, sandıklar "!" turuncu)
      */
-    constructor(scene, x, y, { type, texture, prompt, clue, tint, marker }) {
-      super(scene, x, y, texture);
+    constructor(scene, x, y, { type, texture, frame, prompt, clue, tint, marker }) {
+      super(scene, x, y, texture, frame);
       scene.add.existing(this);
 
       this.type = type;       // 'tree' | 'soil' | 'sunstick' | 'altimeter' | 'fauna' | 'crate'

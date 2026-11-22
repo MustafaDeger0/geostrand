@@ -2049,3 +2049,37 @@ body.race-mode .race-board-panel {
   }
   #hud .objective .obj-hint { display: none; }
 }
+
+/* Profile and settings: safe-area aware dialog with intrinsic scrolling. */
+#player-hub { z-index: 61; padding: max(12px, var(--sat)) max(12px, var(--sar)) max(12px, var(--sab)) max(12px, var(--sal)); }
+.player-hub-card { width: min(560px, 100%); max-height: 100%; overflow-y: auto; overscroll-behavior: contain; background: #102e33; color: #edf5ef; border: 1px solid #497278; border-radius: 22px; padding: clamp(16px, 4vw, 28px); box-shadow: 0 20px 80px #0008; }
+.hub-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.hub-header h2 { margin: 0; font: 800 clamp(22px, 5vw, 30px)/1.15 var(--display); }
+.hub-header button { flex-shrink: 0; min-width: 44px; min-height: 44px; }
+.hub-identity { display: flex; align-items: center; gap: 20px; }
+.hub-identity canvas { width: 90px; height: 120px; flex-shrink: 0; image-rendering: pixelated; background: #dce8d4; border-radius: 18px; }
+.hub-identity h3 { margin: 0 0 8px; overflow-wrap: anywhere; }
+.hub-identity p, .hub-note { font-size: 14px; opacity: .78; line-height: 1.5; }
+.hub-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 16px 0; }
+.hub-stats p { background: #ffffff0b; border: 1px solid #ffffff18; border-radius: 12px; padding: 12px 6px; margin: 0; text-align: center; font-size: 13px; }
+.hub-stats strong { display: block; margin-top: 8px; color: #ffd23f; font-size: 19px; }
+.hub-section .btn-signal { width: 100%; }
+.hub-slider { display: grid; grid-template-columns: 95px minmax(0, 1fr) 44px; align-items: center; gap: 10px; margin: 16px 0; }
+.hub-slider input { width: 100%; min-width: 0; min-height: 40px; accent-color: #ff8a3d; }
+.hub-slider output { text-align: right; font-variant-numeric: tabular-nums; }
+.hub-mute { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+.hub-mute input { width: 22px; height: 22px; accent-color: #ff8a3d; }
+#hub-speech { font-size: clamp(17px, 4vw, 20px); line-height: 1.65; }
+.hub-tip { padding: 14px; border-left: 3px solid #8bd2d5; background: #8bd2d510; line-height: 1.6; }
+.shadow-guide { border: 2px solid #df9b35; background: #f6e7bb; color: #19373a; border-radius: 14px; padding: 12px; margin-block: 16px; }
+.shadow-guide summary { font-size: 17px; font-weight: 800; color: #70410a; min-height: 44px; cursor: pointer; }
+.shadow-steps { padding-left: 22px; line-height: 1.6; margin-block: 10px; }
+.shadow-calculator { display: grid; gap: 8px; border-radius: 10px; padding: 12px; background: #fff8; }
+.shadow-calculator label { font-weight: 700; }
+.shadow-calculator input { width: 100%; min-width: 0; min-height: 44px; padding: 10px; border: 1px solid #8b7856; border-radius: 8px; background: #fffef7; color: #19373a; font-size: 18px; }
+.shadow-calculator output { font-size: 17px; font-weight: 800; color: #295c42; }
+.shadow-guide .ruler { overflow-x: auto; }
+@media (max-width: 380px) {
+  .hub-slider { grid-template-columns: 76px minmax(0, 1fr) 38px; gap: 6px; font-size: 14px; }
+  .hub-stats strong { font-size: 16px; }
+}

@@ -48,6 +48,7 @@
     ['hairStyle', 'Saç modeli', 'chip'],
     ['hairColor', 'Saç rengi', 'swatch'],
     ['hat', 'Şapka', 'chip'],
+    ['hatColor', 'Şapka rengi', 'swatch'],
     ['jacket', 'Ceket', 'swatch'],
     ['pack', 'Sırt çantası', 'swatch'],
   ];
