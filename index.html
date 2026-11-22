@@ -164,9 +164,12 @@
             <summary>📐 Gölgeden enlem bul · ölç ve karşılaştır</summary>
             <ol class="shadow-steps"><li>Haritadaki güneş çubuğunu incele.</li><li>Gölge <b>kuzeye</b> ise Kuzey; <b>güneye</b> ise Güney Yarım Küre.</li><li>1 m çubuğun gölge uzunluğunu aşağıdaki cetvelle karşılaştır.</li></ol>
             <div class="shadow-calculator">
-              <label for="shadow-length">Ölçtüğün gölge (metre)</label>
+              <strong>Gölge ölçüsü → yaklaşık enlem</strong>
+              <p class="shadow-help">1 metrelik çubuğun gölgesi uzadıkça enlem büyür. Örneğin <b>0,58 m gölge ≈ 30° enlem</b>. Çubuğu incelediğinde ölçüm aşağıya otomatik gelir.</p>
+              <label for="shadow-length">Gölge uzunluğu (metre)</label>
               <input id="shadow-length" type="text" inputmode="decimal" maxlength="8" placeholder="Örn. 0,58" autocomplete="off">
-              <output id="shadow-answer" for="shadow-length" aria-live="polite">Uzunluğu yaz → yaklaşık enlemi gör</output>
+              <button type="button" class="btn-ghost" id="shadow-load" disabled>İncelediğim çubuğun ölçümünü kullan</button>
+              <output id="shadow-answer" for="shadow-length" aria-live="polite">Çubuğu inceleyince ölçüm burada otomatik görünür. İstersen örnek bir uzunluk da yazabilirsin.</output>
             </div>
             <p class="hub-note">Bu hesap oyundaki ekinoks öğleni ve 1 m çubuk içindir. Sonucu tahmin bölümündeki enlemden seç.</p>
             <p class="hint-rules">Gölge <b>kutba</b> doğru düşer. Gölge uzadıkça enlem büyür.</p>
