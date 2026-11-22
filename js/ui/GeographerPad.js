@@ -102,7 +102,8 @@
       this.fields = tier.fields;
       this.notes.clear();
       this.doc.getElementById('shadow-length').value = '';
-      this.doc.getElementById('shadow-answer').textContent = 'Uzunluğu yaz → yaklaşık enlemi gör';
+      this.doc.getElementById('shadow-load').disabled = true;
+      this._syncShadowCalculation();
       this.el.location.textContent = label;
 
       // Kademeye göre sorular: açık olmayanlar gizlenir
@@ -128,6 +129,7 @@
     addNote(clue) {
       if (!clue || this.notes.has(clue.id)) return;
       this.notes.set(clue.id, clue);
+      if (clue.id === 'sunstick') this._useShadowMeasurement();
       this._renderSlot(clue.id);
       this.el.count.textContent = `${this.notes.size}/${this.clueIds.length}`;
     }
@@ -330,14 +332,8 @@
         this._listeners.push([target, type, fn]);
       };
 
-      on(this.doc.getElementById('shadow-length'), 'input', (event) => {
-        const raw = event.target.value.trim().replace(',', '.');
-        const value = Number(raw);
-        this.doc.getElementById('shadow-answer').textContent =
-          raw && /^\\d+(\\.\\d+)?$/.test(raw) && Number.isFinite(value) && value >= 0
-            ? 'Yaklaşık ' + Math.round(Math.atan(value) * 180 / Math.PI) + '° enlem'
-            : '0 veya daha büyük bir gölge uzunluğu yaz.';
-      });
+      on(this.doc.getElementById('shadow-length'), 'input', () => this._syncShadowCalculation());
+      on(this.doc.getElementById('shadow-load'), 'click', () => this._useShadowMeasurement());
       on(this.el.close, 'click', () => this.close());
       on(this.el.guide, 'click', () => this.bus.emit(GS.EVENTS.UI_GUIDE, 'climates'));
       on(this.el.root, 'mousedown', (e) => {
@@ -377,6 +373,32 @@
           continent: data.get('continent'),
         });
       });
+    }
+
+    /** Inverse of the equinox-noon shadow ratio for the game's 1 m stick. */
+    static latitudeFromShadow(text) {
+      const raw = String(text).trim().replace(',', '.');
+      if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(raw)) return null;
+      const length = Number(raw);
+      if (!Number.isFinite(length) || length < 0) return null;
+      return Math.round(Math.atan(length) * 180 / Math.PI);
+    }
+
+    _syncShadowCalculation() {
+      const input = this.doc.getElementById('shadow-length');
+      const latitude = GeographerPad.latitudeFromShadow(input.value);
+      this.doc.getElementById('shadow-answer').textContent = latitude === null
+        ? (input.value.trim() ? 'Metre cinsinden bir sayı yaz. Örnek: 0,58 veya 0.58.'
+          : 'Çubuğu inceleyince ölçüm burada otomatik görünür. İstersen örnek bir uzunluk da yazabilirsin.')
+        : 'Yaklaşık ' + latitude + '° enlem. Tahmin bölümündeki Enlem değerini ' + latitude + '° olarak seç.';
+    }
+
+    _useShadowMeasurement() {
+      const clue = this.notes.get('sunstick');
+      if (!clue || !clue.shadow || !Number.isFinite(clue.shadow.length)) return;
+      this.doc.getElementById('shadow-length').value = clue.shadow.length.toFixed(2).replace('.', ',');
+      this.doc.getElementById('shadow-load').disabled = false;
+      this._syncShadowCalculation();
     }
 
     _syncLatitude() {
