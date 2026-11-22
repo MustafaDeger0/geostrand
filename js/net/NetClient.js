@@ -172,7 +172,7 @@
     /** Kayıtlı oturumla geri dön */
     async rejoin() {
       if (!this.session) return { error: 'Oturum yok.' };
-      const res = await this.call('room:rejoin', { code: this.session.code, token: this.session.token });
+      const res = await this.call('room:rejoin', { code: this.session.code, token: this.session.token, worldVersion: 2 });
       if (res.error) this._setSession(null);
       return res;
     }
@@ -182,7 +182,7 @@
       // bu yüzden temizlik isteği göndermeden önce yapılmalı.)
       this.state = null;
       this.lastRound = null;
-      const res = await this.call(event, payload);
+      const res = await this.call(event, { ...payload, worldVersion: 2 });
       if (res.ok) {
         this._setSession({ code: res.code, token: res.token, playerId: res.playerId, isPublic: res.isPublic });
       }
