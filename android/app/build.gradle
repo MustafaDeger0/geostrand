@@ -2,8 +2,8 @@ apply plugin: 'com.android.application'
 
 // Sürüm: Google Play her yüklemede versionCode'un BÜYÜMESİNİ ister.
 // Bulutta derlemede (GitHub Actions) VERSION_CODE otomatik artar; elle derlerken 1 kalır.
-def appVersionCode = (System.getenv("VERSION_CODE") ?: "1").toInteger()
-def appVersionName = System.getenv("VERSION_NAME") ?: "1.0.0"
+def appVersionCode = (System.getenv("VERSION_CODE") ?: "26").toInteger()
+def appVersionName = System.getenv("VERSION_NAME") ?: "1.0.26"
 
 // İmza: yükleme anahtarı (upload key) ortam değişkenlerinden okunur, depoya KONMAZ.
 def keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
